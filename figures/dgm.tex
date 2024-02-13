@@ -1,0 +1,64 @@
+\tikzstyle{input}=[
+    circle,
+    very thick,
+    minimum size=0.55cm,
+    draw=black!80,
+    fill=white!20
+]
+
+\tikzstyle{output}=[
+    circle,
+    very thick,
+    minimum size=0.55cm,
+    draw=black!80,
+    fill=gray!20
+]
+
+\begin{tikzpicture}[>=latex,text height=0.8ex,text depth=0.25ex]
+	\matrix[row sep=0.35cm,column sep=0.45cm] {
+		& % Y LAYER
+		\node (y_0) [output]{\large $y_0$}; &   &
+		\node (y_t) [output]{\large $y_t$}; &   &
+		\node (y_T) [output]{\large $y_T$}; &   &
+		\\ & % X LAYER
+		\node (x_0) [input]{\large $x_0$}; &   &
+		\node (x_t) [input]{\large $x_t$}; &   &
+		\node (x_T) [input]{\large $x_T$}; &   &
+		\\ & % U LAYER
+		\node (u_0) [input]{\large $u_0$}; &   &
+		\node (u_t) [input]{\large $u_t$}; &   &
+		\node (u_T) [input]{\large $u_T$}; &   &
+		\\
+        & \node (theta) [input]{\large $\phi$}; & \\
+	};
+	\path[->]
+	% Horizontal connections
+	(x_0) edge[very thick, dashed] (x_t)
+	(x_t) edge[very thick, dashed] (x_T)
+
+	% Connections from x to y
+	(x_0) edge[very thick] (y_0)
+	(x_t) edge[very thick] (y_t)
+	(x_T) edge[very thick] (y_T)
+
+    % Connections from x to u
+	(x_0) edge[very thick] (u_0)
+	(x_t) edge[very thick] (u_t)
+	(x_T) edge[very thick] (u_T)
+
+	% Connections from u to y
+	(u_0) edge[bend right=40, very thick] (y_0)
+	
+	(u_t) edge[bend right=40, very thick] (y_t)
+	(u_T) edge[bend right=40, very thick] (y_T)
+
+	% Diagonal from u to x
+	(u_0) edge[very thick, dashed] (x_t)
+	(u_t) edge[very thick, dashed] (x_T)
+
+    % Connections from pi to u
+	(theta) edge[very thick] (u_0)
+	(theta) edge[bend right=20, very thick] (u_t)
+	(theta) edge[bend right=20, very thick] (u_T)
+	;
+\end{tikzpicture}

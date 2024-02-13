@@ -1,0 +1,353 @@
+\documentclass[10pt, aspectratio=1610]{beamer}
+
+% Theming
+\usetheme{Madrid}
+\usecolortheme{beaver}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{graphicx}
+\usepackage{subfigure}
+\usepackage{algorithm2e, setspace}
+\mathtoolsset{showonlyrefs}
+
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\newcommand{\given}{\,|\,}
+\newcommand{\dd}{\mathrm{d}}
+
+\usepackage{times}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=newest}
+
+% Natbib for citations.
+\usepackage{natbib}
+\bibliographystyle{unsrtnat}
+
+\title{Policy Optimization with Markovian Score Climbing}
+\date{February 16, 2024}
+\author{Sahel Iqbal}
+\institute{Aalto University, Finland}
+
+\begin{document}
+  \maketitle
+
+  \AtBeginSection[] {
+    \begin{frame}{Table of Contents}
+		\tableofcontents[currentsection]
+	\end{frame}
+  }
+  
+  \begin{frame}{Works covered in this talk}
+    \begin{enumerate}
+      \item \emph{Risk-Sensitive Stochastic Optimal Control as Rao-Blackwellized Markovian Score Climbing}. Hany Abdulsamad, Sahel Iqbal, Adrien Corenflos, Simo S\"arkk\"a. 2023. arXiv preprint arXiv:2312.14000.
+      \item \emph{Nesting Particle Filters for Experimental Design in Dynamical Systems}. Sahel Iqbal, Adrien Corenflos, Simo S\"arkk\"a, Hany Abdulsamad. 2024.
+    \end{enumerate}
+  \end{frame}
+
+  \section{Stochastic Optimal Control as Inference}
+    \begin{frame}{Expected Cost Criterion}
+      Consider the discrete-time sequential decision making problem
+      \begin{equation}\label{eq:soc_objective}
+        \mathcal{J}(\pi) = \mathbb{E}_{x_{0:T}, u_{0:T}} \left[\sum_{t=0}^{T} c(x_t, u_t)\right],
+      \end{equation}
+      %
+      where
+      \begin{itemize}
+        \item $x_t \in \mathbb{R}^m$ denote the states.
+        \item $u_t \in \mathbb{R}^n$ denote the actions.
+        \item $c(x_t, u_t) \geq 0$ is the stage cost.
+      \end{itemize}
+  
+      \vskip 1cm
+      The joint distribution of states and actions is
+      \begin{equation}
+          p(x_{0:T}, u_{0:T}) = \mu(x_{0}) \prod_{t=0}^{T-1} f(x_{t+1} \mid x_t, u_t) \, \prod_{t=0}^T \pi(u_t \mid x_t).
+      \end{equation}
+    \end{frame}
+
+    \begin{frame}{Decision Making under Uncertainty}
+        For a policy space $\Pi$, we want to find
+        \begin{equation*}
+            \pi^{*} = \argmin_{\pi \in \Pi} \medspace \mathcal{J}(\pi).
+        \end{equation*}
+        ~ \\
+        For a parametric form $\pi(\cdot \given x_t) \equiv \pi_{\phi}(\cdot \given x_t)$ with $\phi \in \Phi \subseteq \mathbb{R}^{l}$
+        \begin{equation*}
+            \phi^{*} = \argmin_{\phi \in \Phi} \medspace \mathcal{J}(\phi).
+        \end{equation*}
+    \end{frame}
+
+    \begin{frame}{The pseudo-likelihood}
+      \begin{columns}
+        \begin{column}{0.6\textwidth}
+          \begin{itemize}
+            \item Following \citet{toussaint2006probabilistic} and \citet{rawlik2013probabilistic}, let us introduce a binary random variable $y_t$ with likelihood
+              \begin{equation}
+                \smash{g(y_t = 1 \mid x_t, u_t) = \exp \big\{-\eta \, c(x_t, u_t)\big\}},
+              \end{equation}
+              %
+              where $\eta \in \mathbb{R}_{>0}$.
+            \item This can be interpreted as the \emph{probability of being optimal}.
+            \item We can treat this as a pseudo-observation in a state-space model.
+          \end{itemize}
+        \end{column}
+        \begin{column}{0.4\textwidth}
+          \begin{figure}[htbp]
+            \label{fig:dgm}
+            \centering
+            \include{figures/dgm}
+          \end{figure}
+        \end{column}
+      \end{columns}
+    \end{frame}
+
+    \begin{frame}{Maximum Likelihood}
+      Maximizing the marginal likelihood is equivalent to minimizing a risk-sensitive objective
+      \begin{align}\label{eq:max_likelihood}
+        \argmax_{\phi \in \Phi} \medspace \log p(y_{0:T} = 1 \mid \phi) &= \argmin_{\phi \in \Phi} \medspace -\frac{1}{\eta}\log \mathbb{E}_{p_{\phi}} \left[ \exp \big\{-\eta \textstyle \sum_{t=0}^{T} c(x_{t}, u_{t}) \big\} \right] \\
+        &\coloneq \argmin_{\phi \in \Phi} \mathcal{J}_\eta(\phi)
+      \end{align}
+      %
+      where $p_{\phi} \coloneqq p(x_{0:T}, u_{0:T} \mid \phi)$.
+
+      \vskip 0.5cm
+      Taylor expansion around $\eta = 0$ yields
+      \begin{equation}
+        \mathcal{J}_\eta(\phi) = \mathbb{E} \Bigg[ \sum_{t=0}^{T} c_{t}(x_{t}, u_{t}) \Bigg] - \frac{\eta}{2} \, \mathbb{V} \Bigg[ \sum_{t=0}^{T} c_{t}(x_{t}, u_{t}) \Bigg] + \mathcal{O}(\eta^{2}).
+      \end{equation}
+      %
+      Thus, this log-marginal objective amounts to a risk-sensitive variant of the control objective modulated by the temperature $\eta$.
+    \end{frame}
+
+    \begin{frame}{Cleaning up the notation}
+      \begin{itemize}
+        \item Let us define an augmented state
+          \begin{equation}
+            z_t \coloneq (x_t, u_t)
+          \end{equation}
+        \item Additionally, let us define
+          \begin{equation}
+            \mu_{\phi}(z_0) \coloneqq \mu(x_0) \, \pi_{\phi}(u_0 \mid x_0), \quad f_{\phi}(z_{t+1} \mid z_t) \coloneqq f(x_{t+1} \mid x_t, u_t) \, \pi_{\phi}(u_{t+1} \mid x_{t+1}).
+          \end{equation}
+        \item We can then write a joint density
+          \begin{equation}\label{eq:paper_1_ssm}
+            p_{\phi}(z_{0:T}, y_{0:T}) = \mu_{\phi}(z_0) \prod_{t=0}^{T-1} f_{\phi}(z_{t+1} \mid z_t) \prod_{t=0}^T g(y_t \mid z_t).
+          \end{equation}
+        \item Our goal is to find the maximum likelihood estimate for the SSM specified by~\eqref{eq:paper_1_ssm}.
+      \end{itemize}
+    \end{frame}
+
+    \begin{frame}{Complications}
+      \begin{equation}
+        p_{\phi}(z_{0:T}, y_{0:T}) = \mu_{\phi}(z_0) \prod_{t=0}^{T-1} f_{\phi}(z_{t+1} \mid z_t) \prod_{t=0}^T g(y_t \mid z_t).
+      \end{equation}
+      \begin{itemize}
+        \item In general, the SSM can be
+        \begin{itemize}
+          \item non-linear,
+          \item non-Gaussian,
+          \item bounded support.
+        \end{itemize}
+      \item Gaussian approximations yield biased estimates of the marginal likelihood.
+      \item The solution - particle methods!
+      \end{itemize}
+    \end{frame}
+
+  \section{Markovian Score Climbing for MLE}
+    \begin{frame}{Preliminaries - Particle filters}
+      \begin{columns}
+        \begin{column}{0.5\textwidth}
+          A \emph{particle filter} is a sequential Monte Carlo algorithm that can be used to estimate
+            \begin{itemize}
+              \item the pathwise filtering distributions $p_\phi(x_{0:t} \mid y_{0:t})$,
+              \item and the marginal likelihoods $p_\phi(y_{0:t})$.
+          \end{itemize}
+        \end{column}
+        \begin{column}{0.5\textwidth}
+          \begin{algorithm}[H]
+            \setstretch{1.35}
+            \SetAlgoLined
+            \LinesNumbered
+            \DontPrintSemicolon
+            \For{$n \gets 1, \dots, N$}{
+              Sample $z_0^n \sim \mu_\phi(\cdot)$ and $w_0^n = g(y_0 \given z_0^n)$. \;
+              }
+              \For{$t \gets 1, \dots, T$}{
+                \For{$n \gets 1, \dots, N$}{
+                  \tcp{Resample}
+                  Sample $A_t^n$ with $\mathbb{P}(A_t^n = k) \propto w_{t-1}^k$. \;
+                  \tcp{Propagate}
+                  Sample $z_t^n \sim f_\phi(\cdot \given z_{t-1}^{A_t^n})$. \;
+                  \tcp{Reweight}
+                  Set $w_t^n = g(y_t \given z_t^n)$.\;
+                }
+              }
+          \end{algorithm}
+        \end{column}
+      \end{columns}
+    \end{frame}
+
+    \begin{frame}{Preliminaries - Particle filters}
+      \begin{itemize}
+        \item Particle filters can provide unbiased estimates of the marginal likelihood for general SSMs, but obtaining its gradient is usually not possible.
+        \item In literature this difficulty is often circumvented using Fisher's identity:
+          \begin{equation}
+            \nabla_\phi \, \ell(\phi) = \int \nabla_\phi \log p_{\phi}(z_{0:T}, y_{0:T}) \, p_\phi(z_{0:T} \given y_{0:T}) \, \dd z_{0:T}.
+          \end{equation}
+        \item The above integral can be estimated using samples from the smoothing distribution.
+      \end{itemize} 
+    \end{frame}
+
+    \begin{frame}{Preliminaries - Backward sampling}
+      \begin{columns}
+        \begin{column}{0.5\textwidth}
+          \begin{itemize}
+            \item How do we obtain samples distributed according to $p_\phi(z_{0:T} \given y_{0:T})$?
+          \end{itemize}          
+        \end{column}
+        \begin{column}{0.5\textwidth}
+          \begin{algorithm}[H]
+            \setstretch{1.35}
+            \SetAlgoLined
+            \LinesNumbered
+            \DontPrintSemicolon
+            Sample $B_T$ with $\mathbb{P}(B_T = k) \propto w_T^k$ \; 
+            Set $z_T^* = z_T^{B_T}$ \;
+            \For{$t \gets T-1, \dots, 0$}{
+              Sample $B_t$ with $\mathbb{P}(B_t = k) \propto w_t^k \, f_\phi(z_{t+1}^{*} \given z_t^k)$ \; 
+              Set $z_t^* = z_t^{B_t}$ \; 
+            }
+          \end{algorithm}
+        \end{column}
+      \end{columns}
+    \end{frame}
+
+    \begin{frame}{Score Climbing For Likelihood Maximization}
+      We aim to maximize the log-marginal likelihood w.r.t. $\phi$
+      \begin{equation}
+          \ell(\phi) := \log p(y_{0:T} = 1 \given \phi).
+      \end{equation}
+        using a stochastic gradient ascent procedure:
+        \begin{equation*}
+            \phi_k = \phi_{k-1} + \gamma_k \, \widehat{\nabla_\phi \ell}(\phi_{k-1}),
+        \end{equation*}
+        We know that the criteria necessary for convergence are~\citep{robbins1951stochastic}
+        \begin{itemize}
+          \item The gradient estimate should be unbiased:
+            \begin{equation}
+              \mathbb{E}\left[\widehat{\nabla_\phi \ell}(\phi_{k-1})\right] = \nabla_\phi \ell(\phi_{k-1})
+            \end{equation}
+          \item The step sizes must satisfy
+            \begin{equation}
+              \sum_{k=1}^\infty \gamma_k = \infty, \quad \sum_{k=1}^\infty \gamma_k^2 < \infty.
+            \end{equation}
+        \end{itemize}
+    \end{frame}
+
+\begin{frame}{Markovian Score Climbing For Likelihood Maximization}
+        \begin{itemize}
+            \setlength\itemsep{2em}
+            \item Estimates of $\nabla_\phi \, \ell(\phi)$ via particle smoothing are biased for a finite number of particles $N$.
+            \item We can do better by drawing samples from a Markov chain Monte Carlo kernel $\mathcal{K}$ ergodic w.r.t. $p_\phi(z_{0:T} \given y_{0:T})$ so that
+            \begin{equation*}
+                Z^n \sim \mathcal{K}(\cdot \given \mathcal{K}(\cdot \given \ldots, \phi), \phi) := \mathcal{K}^n(\cdot \given z_{0:T}, \phi).
+            \end{equation*}
+            \item The $p_\phi(z_{0:T} \given y_{0:T})$-ergodic MCMC kernel $\mathcal{K}$ guarantees a consistent estimates, no matter the number of samples $N$.
+        \end{itemize}
+    \end{frame}
+\begin{frame}{Markovian Score Climbing For Likelihood Maximization}
+        \begin{algorithm}[H]
+            \setstretch{1.35}
+            \SetAlgoLined
+            \LinesNumbered
+            \DontPrintSemicolon
+            \KwIn{Initial trajectory $z^{0}_{0:T}$, initial parameters $\phi_0$, number of iterations $M$, step sizes $\gamma_{1:M}$, Markov kernel $\mathcal{K}$.}
+            \KwOut{$\phi^* \approx \phi_{\text{MLE}}$}
+            \For{$k \gets 1,\dots, M$}{
+                Sample $z^{k}_{0:T} \sim \mathcal{K}(\cdot \given z^{k-1}_{0:T}, \phi_{k-1})$ \;
+                Compute $\widehat{\nabla_\phi \ell}(\phi_{k-1}) \gets \nabla_\phi \log p_\phi(z^{k}_{0:T}, y_{0:T}) \vert_{\phi=\phi_{k-1}}$ \;
+                Update $\phi_k \gets \phi_{k-1} + \gamma_k \widehat{\nabla_\phi \ell}(\phi_{k-1})$\;
+            }
+            \Return{$\phi_M$}
+        \end{algorithm}
+    \end{frame}
+
+    \begin{frame}{\textcolor{blue}{Conditional} SMC with backward sampling}
+        \begin{algorithm}[H]
+            \setstretch{1.35}
+            \SetAlgoLined
+            \LinesNumbered
+            \DontPrintSemicolon
+            \KwIn{\textcolor{blue}{Trajectory $z_{0:T}$}}
+            \tcp{Forward filtering}
+            \textcolor{blue}{Set $z_0^1 = z_0$ and $w_0^1 = g(y_0 \given z_0)$} \;
+            \For{$n \gets 2, \dots, N$}{
+            Sample $z_0^n \sim \mu_\phi(\cdot)$ and $w_0^n = g(y_0 \given z_0^n)$ \;
+            }
+            \For{$t \gets 1, \dots, T$}{
+                \textcolor{blue}{Set $z_t^1 = z_t$ and $w_t^1 = g(y_t \given z_t)$} \;
+                \For{$n \gets 2, \dots, N$}{
+                    Sample $A_t^n$ with $\mathbb{P}(A_t^n = k) \propto w_{t-1}^k$ \;
+                    Sample $z_t^n \sim f_\phi(\cdot \given z_{t-1}^{A_t^n})$ and $w_t^n = g(y_t \given z_t^n)$\;
+                }
+            }
+        \end{algorithm}
+    \end{frame}
+
+    \begin{frame}{Rao-Blackwellized Markovian Score Climbing}
+        \begin{algorithm}[H]
+            \setstretch{1.5}
+            \SetAlgoLined
+            \LinesNumbered
+            \DontPrintSemicolon
+            \KwIn{Trajectory $z_{0:T}$}
+            \KwOut{Score estimate $\widehat{\nabla_\phi \ell}(\phi)$}
+            Run forward filtering to obtain the filtered particles, their weights, and the resampling indices \;
+            Backward-Sample $z^{n}_{0:T} \sim \mathcal{B}$ for all $n = 1, \dots, N$ \;
+            Compute $\widehat{\nabla_\phi \ell}(\phi) \gets \frac{1}{N} \sum_{n=1}^N \nabla_\phi \log p_\phi(z^{n}_{0:T}, y_{0:T})$ \;
+            \Return{$\widehat{\nabla_\phi \ell}(\phi)$}
+        \end{algorithm}
+    \end{frame}
+
+    \begin{frame}{Numerical Validation}
+      \begin{columns}
+        \begin{column}{0.5\textwidth}
+          \begin{figure}[htbp]
+            \centering
+            \include{figures/pendulum}
+          \end{figure}
+        \end{column}
+        \begin{column}{0.5\textwidth}
+          \begin{figure}[htbp]
+            \centering
+            \include{figures/cartpole}
+          \end{figure}
+        \end{column}
+      \end{columns}
+    \end{frame}
+
+    \begin{frame}{Numerical Validation}
+      \begin{columns}
+        \begin{column}{0.5\textwidth}
+          \begin{figure}[htbp]
+            \centering
+            \include{figures/double_pendulum}
+          \end{figure}
+        \end{column}
+        \begin{column}{0.5\textwidth}
+          \begin{figure}[htbp]
+            \centering
+            \includegraphics[scale=0.1]{figures/psoc_qr.png}
+            \caption{\url{github.com/hanyas/psoc.git}}
+          \end{figure}
+        \end{column}
+      \end{columns}
+    \end{frame}
+
+  % Bibliography
+  \begin{frame}[t, allowframebreaks]{References}
+    \bibliography{references}
+  \end{frame}
+
+\end{document}
