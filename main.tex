@@ -200,16 +200,42 @@
       \end{itemize} 
     \end{frame}
 
+    \begin{frame}{Preliminaries - Genealogy tracking}
+      \begin{columns}
+        \begin{column}{0.5\textwidth}
+          \begin{itemize}
+            \item<1-> How do we obtain samples distributed according to $p_\phi(z_{0:T} \given y_{0:T})$?
+            \item<2-> The particle filter is in itself a smoother (albeit not a very good one).
+          \end{itemize}          
+        \end{column}
+        \begin{column}<2->{0.5\textwidth}
+          \begin{algorithm*}[H]
+            \setstretch{1.35}
+            \SetAlgoLined
+            \LinesNumbered
+            \DontPrintSemicolon
+            Sample $B_T$ with $\mathbb{P}(B_T = k) \propto w_T^k$ \; 
+            Set $z_T^* = z_T^{B_T}$ \;
+            \For{$t \gets T-1, \dots, 0$}{
+              Set $B_t = A_{t+1}^{B_{t+1}}$. \;
+              Set $z_t^* = z_t^{B_t}$. \; 
+            }
+            \caption{Genealogy tracking.}
+          \end{algorithm*}
+        \end{column}
+      \end{columns}
+    \end{frame}
+
     \begin{frame}{Preliminaries - Backward sampling}
       \begin{columns}
         \begin{column}{0.5\textwidth}
           \begin{itemize}
-            \item How do we obtain samples distributed according to $p_\phi(z_{0:T} \given y_{0:T})$?
-            \item Algorithms~\ref{alg:particle_filter} and~\ref{alg:backward_sampling} together yield the \emph{forward filtering backward smoothing} algorithm, a kind of particle smoother.
+            \item If we can compute the transition density in closed form, we can do better.
+            \item The result is the \emph{forward filtering backward smoothing} algorithm.
           \end{itemize}          
         \end{column}
         \begin{column}{0.5\textwidth}
-          \begin{algorithm}[H]
+          \begin{algorithm*}[H]
             \setstretch{1.35}
             \SetAlgoLined
             \LinesNumbered
@@ -220,9 +246,8 @@
               Sample $B_t$ with $\mathbb{P}(B_t = k) \propto w_t^k \, f_\phi(z_{t+1}^{*} \given z_t^k)$ \; 
               Set $z_t^* = z_t^{B_t}$ \; 
             }
-            \label{alg:backward_sampling}
             \caption{Backward sampling.}
-          \end{algorithm}
+          \end{algorithm*}
         \end{column}
       \end{columns}
     \end{frame}
@@ -448,8 +473,77 @@
       \end{itemize}
     \end{frame}
 
-    \begin{frame}{IBIS}
-      
+    \begin{frame}{BED as probabilistic inference}
+      \textcolor{red}{\large What do we know so far?}\vspace{0.1cm}
+      \begin{enumerate}
+        \item<2-> We know how to formulate the sequential BED problem as a maximum likelihood estimation problem (in a non-Markovian state-space model).
+        \item<3-> We know how to perform MLE with the Markovian score climbing algorithm, given an MCMC kernel that targets the pathwise smoothing distribution.
+        \item<4-> We know how to convert a particle smoothing algorithm to a CSMC kernel.
+      \end{enumerate}
+
+      \vspace{0.3cm}
+      \onslide<5->{\textcolor{red}{The one thing we don't know~(yet)} - a particle smoothing algorithm for $\Gamma_\phi(z_{0:T})$.}
+    \end{frame}
+
+  \section{Inside-Out SMC\textsuperscript{2}}
+    \begin{frame}{Preliminaries - IBIS}
+      \begin{columns}
+        \begin{column}{0.5\textwidth}
+          \begin{itemize}
+            \only<1,2>{
+            \item For a model
+              \begin{gather}
+                \theta \sim p(\theta), \\
+                z_t \sim p_\phi(z_t \mid z_{0:t-1}, \theta), \quad t \geq 1,
+              \end{gather}
+              %
+              how do we estimate the running filtered posteriors $p(\theta \mid z_{0:t})$?
+            }
+            \only<2-5>{
+            \item We can use the \emph{iterated batch importance sampling}~(IBIS) algorithm from~\citet{chopin2002sequential}.
+            }
+            \only<3>{
+            \item We start by sampling $M$ many independent and identically distributed samples $\theta^m \sim p(\theta)$.
+            }
+            \only<4>{
+            \item The degeneracy criterion we use is
+              \begin{equation}
+                \textrm{ESS} < 0.75 * M,
+              \end{equation}
+              where ESS stands for effective sample size, which is calculated as
+              \begin{equation}
+                \textrm{ESS} = \frac{1}{\sum_{m=1}^M (W^m)^2}
+              \end{equation}
+            }
+            \only<5>{
+            \item $K_t$ is a $p(\theta \mid z_{0:t}$-ergodic MCMC kernel.
+            \item We use a random walk Metropolis Hastings kernel.
+            }
+          \end{itemize}
+        \end{column}
+        \begin{column}{0.5\textwidth}
+          \uncover<2->{
+          \begin{algorithm}[H]
+            \setstretch{1.35}
+            \SetAlgoLined
+            \LinesNumbered
+            \DontPrintSemicolon
+            \SetKwProg{Fn}{Function}{}{}
+            \Fn{IbisStep}{
+              Compute $v_t(\theta^m) = p_\phi(z_t \mid z_{0:t-1}, \theta^m)$. \;
+              Reweight: $W^m \propto W^m v_t(\theta^m)$. \;
+              \If{some degeneracy criterion is fulfilled}{
+                Resample: $a_t^m \sim \mathcal{M}(W^{1:M})$. \;
+                Move: $\tilde{\theta}^m \sim K_t(\theta^{a_t^m}, \cdot)$. \;
+                Replace the current set of weighted particles with
+                $(\theta^m, W^m) \gets (\tilde{\theta}^m, 1 / M)$. \;
+              }
+              \KwRet{$\{\theta^m, W^m\}_{m=1}^M$.} \;
+            }
+          \end{algorithm}
+          }
+        \end{column}
+      \end{columns}
     \end{frame}
 
   % Bibliography
