@@ -5,8 +5,6 @@
 \usecolortheme{beaver}
 
 \usepackage{amsmath,amssymb,amsthm,mathtools}
-\usepackage{graphicx}
-\usepackage{subfigure}
 \usepackage{algorithm2e, setspace}
 \mathtoolsset{showonlyrefs}
 
@@ -14,6 +12,7 @@
 \DeclareMathOperator*{\argmax}{arg\,max}
 \newcommand{\given}{\,|\,}
 \newcommand{\dd}{\mathrm{d}}
+\newtheorem{proposition}[theorem]{Proposition}
 
 \usepackage{times}
 \usepackage{tikz}
@@ -41,7 +40,7 @@
   \begin{frame}{Works covered in this talk}
     \begin{enumerate}
       \item \emph{Risk-Sensitive Stochastic Optimal Control as Rao-Blackwellized Markovian Score Climbing}. Hany Abdulsamad, Sahel Iqbal, Adrien Corenflos, Simo S\"arkk\"a. 2023. arXiv preprint arXiv:2312.14000.
-      \item \emph{Nesting Particle Filters for Experimental Design in Dynamical Systems}. Sahel Iqbal, Adrien Corenflos, Simo S\"arkk\"a, Hany Abdulsamad. 2024.
+      \item \emph{Nesting Particle Filters for Experimental Design in Dynamical Systems}. Sahel Iqbal, Adrien Corenflos, Simo S\"arkk\"a, Hany Abdulsamad. 2024. arXiv preprint arXiv:2402.07868.
     \end{enumerate}
   \end{frame}
 
@@ -183,6 +182,8 @@
                   Set $w_t^n = g(y_t \given z_t^n)$.\;
                 }
               }
+              \label{alg:particle_filter}
+              \caption{Bootstrap particle filter.}
           \end{algorithm}
         \end{column}
       \end{columns}
@@ -193,7 +194,7 @@
         \item Particle filters can provide unbiased estimates of the marginal likelihood for general SSMs, but obtaining its gradient is usually not possible.
         \item In literature this difficulty is often circumvented using Fisher's identity:
           \begin{equation}
-            \nabla_\phi \, \ell(\phi) = \int \nabla_\phi \log p_{\phi}(z_{0:T}, y_{0:T}) \, p_\phi(z_{0:T} \given y_{0:T}) \, \dd z_{0:T}.
+            \nabla_\phi \, \ell(\phi) \coloneq \nabla_\phi \, p_\phi(y_{0:T} = 1) = \int \nabla_\phi \log p_{\phi}(z_{0:T}, y_{0:T}) \, p_\phi(z_{0:T} \given y_{0:T}) \, \dd z_{0:T}.
           \end{equation}
         \item The above integral can be estimated using samples from the smoothing distribution.
       \end{itemize} 
@@ -204,6 +205,7 @@
         \begin{column}{0.5\textwidth}
           \begin{itemize}
             \item How do we obtain samples distributed according to $p_\phi(z_{0:T} \given y_{0:T})$?
+            \item Algorithms~\ref{alg:particle_filter} and~\ref{alg:backward_sampling} together yield the \emph{forward filtering backward smoothing} algorithm, a kind of particle smoother.
           \end{itemize}          
         \end{column}
         \begin{column}{0.5\textwidth}
@@ -218,42 +220,40 @@
               Sample $B_t$ with $\mathbb{P}(B_t = k) \propto w_t^k \, f_\phi(z_{t+1}^{*} \given z_t^k)$ \; 
               Set $z_t^* = z_t^{B_t}$ \; 
             }
+            \label{alg:backward_sampling}
+            \caption{Backward sampling.}
           \end{algorithm}
         \end{column}
       \end{columns}
     \end{frame}
 
-    \begin{frame}{Score Climbing For Likelihood Maximization}
-      We aim to maximize the log-marginal likelihood w.r.t. $\phi$
+    \begin{frame}{Preliminaries - Gradient ascent using particle smoothing}
+      We now have the building blocks in place to perform MLE through a gradient ascent procedure:
       \begin{equation}
-          \ell(\phi) := \log p(y_{0:T} = 1 \given \phi).
+          \phi_k = \phi_{k-1} + \gamma_k \, \widehat{\nabla_\phi \ell}(\phi_{k-1}),
       \end{equation}
-        using a stochastic gradient ascent procedure:
-        \begin{equation*}
-            \phi_k = \phi_{k-1} + \gamma_k \, \widehat{\nabla_\phi \ell}(\phi_{k-1}),
-        \end{equation*}
-        We know that the criteria necessary for convergence are~\citep{robbins1951stochastic}
-        \begin{itemize}
-          \item The gradient estimate should be unbiased:
-            \begin{equation}
-              \mathbb{E}\left[\widehat{\nabla_\phi \ell}(\phi_{k-1})\right] = \nabla_\phi \ell(\phi_{k-1})
-            \end{equation}
-          \item The step sizes must satisfy
-            \begin{equation}
-              \sum_{k=1}^\infty \gamma_k = \infty, \quad \sum_{k=1}^\infty \gamma_k^2 < \infty.
-            \end{equation}
-        \end{itemize}
+      where
+      \begin{itemize}
+        \item $\widehat{\nabla_\phi \ell}(\phi_{k-1})$ is our stochastic estimate of the score function.
+        \item $\gamma_k$ are step sizes that satisfy $\sum_{k=1}^\infty \gamma_k = \infty, \quad \sum_{k=1}^\infty \gamma_k^2 < \infty$.
+      \end{itemize}
+
+      \vspace{0.5cm}
+      However, one more necessary criterion for the convergence of stochastic gradient ascent~\citep{robbins1951stochastic}, namely
+      \begin{equation}
+        \mathbb{E}\left[\widehat{\nabla_\phi \ell}(\phi_{k-1})\right] = \nabla_\phi \ell(\phi_{k-1})
+      \end{equation}
     \end{frame}
 
 \begin{frame}{Markovian Score Climbing For Likelihood Maximization}
         \begin{itemize}
             \setlength\itemsep{2em}
             \item Estimates of $\nabla_\phi \, \ell(\phi)$ via particle smoothing are biased for a finite number of particles $N$.
-            \item We can do better by drawing samples from a Markov chain Monte Carlo kernel $\mathcal{K}$ ergodic w.r.t. $p_\phi(z_{0:T} \given y_{0:T})$ so that
+            \item We can do better by drawing samples from a Markov chain Monte Carlo kernel $\mathcal{K}$ ergodic w.r.t. $p_\phi(z_{0:T} \given y_{0:T})$, i.e.,
             \begin{equation*}
                 Z^n \sim \mathcal{K}(\cdot \given \mathcal{K}(\cdot \given \ldots, \phi), \phi) := \mathcal{K}^n(\cdot \given z_{0:T}, \phi).
             \end{equation*}
-            \item The $p_\phi(z_{0:T} \given y_{0:T})$-ergodic MCMC kernel $\mathcal{K}$ guarantees a consistent estimates, no matter the number of samples $N$.
+            \item The $p_\phi(z_{0:T} \given y_{0:T})$-ergodic MCMC kernel $\mathcal{K}$ guarantees consistent estimates, no matter the number of samples $N$.
         \end{itemize}
     \end{frame}
 \begin{frame}{Markovian Score Climbing For Likelihood Maximization}
@@ -279,7 +279,7 @@
             \SetAlgoLined
             \LinesNumbered
             \DontPrintSemicolon
-            \KwIn{\textcolor{blue}{Trajectory $z_{0:T}$}}
+            \KwIn{\textcolor{blue}{Reference trajectory $z_{0:T}$}}
             \tcp{Forward filtering}
             \textcolor{blue}{Set $z_0^1 = z_0$ and $w_0^1 = g(y_0 \given z_0)$} \;
             \For{$n \gets 2, \dots, N$}{
@@ -343,6 +343,113 @@
           \end{figure}
         \end{column}
       \end{columns}
+    \end{frame}
+
+    \section{Bayesian Experimental Design}
+    \begin{frame}{Bayesian Experimental Design}
+      Let
+      \begin{itemize}
+        \item $\theta \in \Theta$ be a set of unknown parameters of interest with prior $p(\theta)$.
+        \item $\xi \in \Xi$ be a user controllable \emph{design}.
+        \item $p(x \mid \xi, \theta)$ be a likelihood function.
+      \end{itemize}
+      
+      \pause
+      \begin{definition}
+        The \emph{information gain}~\citep[IG,][]{lindley1956measure}, in the parameter $\theta$, on applying the design $\xi$ and observing the outcome $x$ is defined as
+        \begin{equation}\label{eq:ig_single_experiment}
+          \mathcal{G}(x, \xi) \coloneq \mathbb{H}[p(\theta)] - \mathbb{H}[p(\theta\mid x, \xi)].
+        \end{equation}
+      \end{definition}
+
+      \pause
+      \begin{definition}
+        The \emph{expected information gain}~(EIG) is defined as
+        \begin{equation}
+          \mathcal{I}(\xi) \coloneq \mathbb{E}_{p(x \mid \xi)} \, \mathcal{G}(x, \xi).
+        \end{equation}
+      \end{definition}
+    \end{frame}
+
+    \begin{frame}{Sequential Bayesian Experimental Design}
+      Let us define $z_0 \coloneq \{x_0\}$ and $z_{t} \coloneq \{x_t, \xi_{t-1}\}$ for all $t \geq 1$, and denote the outcome-design history up to time $t$ by $z_{0:t} \coloneq \{x_{0:t}, \xi_{0:t-1}\}$. The system dynamics is specified by
+      \begin{gather}
+        x_0 \sim p(x_0), \\
+        \xi_{t-1} \sim \pi_\phi(\xi_{t-1} \mid z_{0:t-1}), \\
+        x_t \sim f(x_t \mid x_{t-1}, \xi_{t-1}, \theta),
+      \end{gather}
+      \pause
+
+      \vspace{0.2cm}
+      The joint density of states and designs is hence
+      \begin{align}\label{eq:joint_density}
+        p_{\phi}(z_{0:T} \mid \theta) &= p(z_{0}) \prod_{t=1}^T p_{\phi}(z_{t} \mid z_{0:t-1}, \theta) \\
+        &\coloneq p(x_0) \prod_{t=1}^T f(x_t \mid x_{t-1}, \xi_{t-1}, \theta) \, \pi_\phi(\xi_{t-1} \mid z_{0:t-1})
+      \end{align}
+    \end{frame}
+
+    \begin{frame}{Sequential Bayesian Experimental Design}
+      \begin{itemize}
+        \item The EIG for the sequential problem is
+          \begin{equation}
+            \mathcal{I}(\phi) \coloneq \mathbb{E}_{p_{\phi}(z_{0:T})} \Bigl[ \mathbb{H}\bigl[p(\theta)\bigr] - \mathbb{H}\bigl[p(\theta \mid z_{0:T})\bigr] \Bigr].
+          \end{equation}
+        \item Our goal is to find optimal policy parameters $\phi^*$ such that
+          \begin{equation}
+            \phi^* \coloneq \argmax_{\phi \in \Phi} \mathcal{I}(\phi)
+          \end{equation}
+      \end{itemize}
+    \end{frame}
+
+    \begin{frame}{Sequential Bayesian Experimental Design}
+      \begin{proposition}
+        For models with additive, constant noise in the dynamics, the EIG can be written as
+        \begin{equation}\label{eq:eig_constant_noise}
+            \mathcal{I}(\phi) \equiv \mathbb{E}_{p_{\phi}(z_{0:T})} \left[ \sum_{t=1}^T r_{t}(z_{0:t}) \right],
+        \end{equation}
+        where
+        \begin{gather}
+          r_{t}(z_{0:t}) = - \log \int p(\theta \mid z_{0:t-1}) \, f(x_t \mid x_{t-1}, \xi_{t-1}, \theta) \, \dd \theta, \\
+          p_\phi(z_{0:T}) = \int p_\phi(z_{0:T} \mid \theta) \, p(\theta) \, \dd \theta.
+        \end{gather}
+      \end{proposition}
+    \end{frame}
+
+  \section{The dual inference problem}
+
+    \begin{frame}{BED as probabilistic inference}
+      Let us introduce a potential function
+      \begin{equation}\label{eq:potential-function}
+        g_{t}(z_{0:t}) \coloneq \exp \Big\{ \eta \, r_{t}(z_{0:t}) \Big\},
+      \end{equation}
+      with $\eta \in \mathbb{R}_{>0}$.
+
+      \vspace{0.3cm}
+      We then define a non-Markovian state-space model characterized by the following joint density
+      \begin{equation}\label{eq:pathwise_smoothing_trajectory}
+        \Gamma_\phi(z_{0:T}) = \frac{1}{Z(\phi)} \, p(z_0) \prod_{t=1}^T p_\phi(z_t \mid z_{0:t-1}) \, g_t(z_{0:t}),
+      \end{equation}
+      where the normalization constant is
+      \begin{equation}
+        Z(\phi) = \int g_{1:T}(z_{0:T}) \, p_\phi(z_{0:T}) \, \dd z_{0:T}.
+      \end{equation}
+    \end{frame}
+
+    \begin{frame}{BED as probabilistic inference}
+      Some observations:
+      \begin{itemize}
+        \item $Z(\phi)$ is analogous to the marginal likelihood $\ell(\phi) = p_\phi(y_{0:T} = 1)$.
+        \item $\Gamma_\phi(z_{0:T})$ is analogous to the smoothing distribution $p_\phi(z_{0:T} \mid y_{0:T} = 1)$.
+        \item Maximizing the (log) marginal likelihood targets the risk-sensitive objective:
+          \begin{align}
+            \argmax_{\phi \in \Phi} \log Z(\phi) &= \argmax_{\phi \in \Phi} \frac{1}{\eta} \log \mathbb{E}_{p_\phi(z_{0:T})} \left[\exp \left\{\eta \sum_{t=1}^T r_t(z_{0:t})\right\}\right] \\
+            &= \mathbb{E} \left[\sum_{t=1}^T r_t(z_{0:t})\right] - \frac{\eta}{2} \mathbb{V} \left[ \sum_{t=1}^T r_t(z_{0:t}) \right] + \mathcal{O}(\eta^2).
+          \end{align}
+      \end{itemize}
+    \end{frame}
+
+    \begin{frame}{IBIS}
+      
     \end{frame}
 
   % Bibliography
