@@ -486,7 +486,7 @@
       \onslide<5->{\textcolor{red}{The one thing we don't know~(yet)} - a particle smoothing algorithm for $\Gamma_\phi(z_{0:T})$.}
     \end{frame}
 
-  \section{Inside-Out SMC^2}
+  \section{Inside-Out \texorpdfstring{SMC\textsuperscript{2}}{SMC2}}
     \begin{frame}{Setting the stage}
       To come up with a bootstrap particle filter for our non-Markovian time series model, we need to be able to sample from the marginal dynamics,
       \begin{align}
@@ -520,7 +520,19 @@
       \begin{columns}
         \begin{column}{0.5\textwidth}
           \begin{itemize}
-            \item We start by sampling $M$ many independent and identically distributed samples $\theta^m \sim p(\theta)$.
+            \only<1-2>{
+            \item We start by sampling $M$ many independent and identically distributed samples $\theta^m \sim p(\theta)$ with uniform weights $W^m = 1/M$.
+            }
+            \only<2>{
+            \item We then follow the routine outlined in the function \textsc{IbisStep}.
+            }
+            \only<3>{
+            \item The weight update is in accordance with Bayes' rule
+              \begin{equation}
+                p(\theta \mid z_{0:t}) \propto p_\phi(z_t \mid z_{0:t-1}, \theta) \, p(\theta \mid z_{0:t-1})
+              \end{equation}
+            }
+            \only<4>{
             \item The degeneracy criterion we use is
               \begin{equation}
                 \textrm{ESS} < 0.75 * M,
@@ -529,18 +541,22 @@
               \begin{equation}
                 \textrm{ESS} = \frac{1}{\sum_{m=1}^M (W^m)^2}
               \end{equation}
-            \item $K_t$ is a $p(\theta \mid z_{0:t}$-ergodic MCMC kernel.
+            }
+            \only<5>{
+            \item $K_t$ is a $p(\theta \mid z_{0:t})$-ergodic MCMC kernel.
             \item We use a random walk Metropolis Hastings kernel.
+            }
           \end{itemize}
         \end{column}
         \begin{column}{0.5\textwidth}
+          \uncover<2->{
           \begin{algorithm}[H]
             \setstretch{1.35}
             \SetAlgoLined
             \LinesNumbered
             \DontPrintSemicolon
             \SetKwProg{Fn}{Function}{}{}
-            \Fn{IbisStep}{
+            \Fn{\textsc{IbisStep}$(z_{0:t}, \theta^{1:M}, W^{1:M})$}{
               Compute $v_t(\theta^m) = p_\phi(z_t \mid z_{0:t-1}, \theta^m)$. \;
               Reweight: $W^m \propto W^m v_t(\theta^m)$. \;
               \If{some degeneracy criterion is fulfilled}{
@@ -552,7 +568,7 @@
               \KwRet{$\{\theta^m, W^m\}_{m=1}^M$.} \;
             }
           \end{algorithm}
-        Hello
+        }
         \end{column}
       \end{columns}
     \end{frame}
