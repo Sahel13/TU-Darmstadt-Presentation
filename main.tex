@@ -4,6 +4,7 @@
 \usetheme{Madrid}
 \usecolortheme{beaver}
 \usefonttheme{serif}
+\setbeamerfont{frametitle}{shape=\scshape}
 
 \usepackage{amsmath,amssymb,amsthm,mathtools}
 \usepackage{algorithm2e, setspace}
@@ -37,7 +38,7 @@
 	\end{frame}
   }
   
-  \begin{frame}{Works covered in this talk}
+  \begin{frame}{Works Covered}
     \begin{enumerate}
       \item \emph{Risk-Sensitive Stochastic Optimal Control as Rao-Blackwellized Markovian Score Climbing}. Hany Abdulsamad, Sahel Iqbal, Adrien Corenflos, Simo S\"arkk\"a. 2023. arXiv preprint arXiv:2312.14000.
       \item \emph{Nesting Particle Filters for Experimental Design in Dynamical Systems}. Sahel Iqbal, Adrien Corenflos, Simo S\"arkk\"a, Hany Abdulsamad. 2024. arXiv preprint arXiv:2402.07868.
@@ -45,7 +46,7 @@
   \end{frame}
 
   \section{Stochastic Optimal Control as Inference}
-    \begin{frame}{Decision Making under Uncertainty}
+    \begin{frame}{Decision Making Under Uncertainty}
       Consider the discrete-time sequential decision making problem
       \begin{equation}\label{eq:soc_objective}
         \mathcal{J}(\pi) = \mathbb{E}_{x_{0:T}, u_{0:T}} \left[\sum_{t=0}^{T} c(x_t, u_t)\right],
@@ -65,7 +66,7 @@
       \end{equation}
     \end{frame}
 
-    \begin{frame}{Decision Making under Uncertainty}
+    \begin{frame}{Decision Making Under Uncertainty}
         For a policy space $\Pi$, we want to find
         \begin{equation*}
             \pi^{*} = \argmin_{\pi \in \Pi} \medspace \mathcal{J}(\pi).
@@ -77,21 +78,54 @@
         \end{equation*}
     \end{frame}
 
-    \begin{frame}{The pseudo-likelihood}
+    \begin{frame}{Some Notation}
+      \begin{itemize}[<+->]
+        \item Let us define an augmented state
+          \begin{equation}
+            z_t \coloneq (x_t, u_t).
+          \end{equation}
+        \item Additionally, let us define
+          \begin{equation}
+            \mu_{\phi}(z_0) \coloneqq \mu(x_0) \, \pi_{\phi}(u_0 \mid x_0), \quad f_{\phi}(z_{t+1} \mid z_t) \coloneqq f(x_{t+1} \mid x_t, u_t) \, \pi_{\phi}(u_{t+1} \mid x_{t+1}).
+          \end{equation}
+        \item The distribution of an augmented state trajectory is then
+          \begin{equation}
+            p_\phi(z_{0:T}) = \mu_\phi(x_0) \prod_{t=1}^T f_{\phi}(z_{t+1} \mid z_t).
+          \end{equation}
+      \end{itemize}
+    \end{frame}
+
+    \begin{frame}{The Pseudo-Observation}
+      \begin{itemize}[<+->]
+        \item Following \citet{toussaint2006probabilistic} and \citet{rawlik2013probabilistic}, let us introduce a binary random variable $y_t$ with likelihood
+          \begin{equation}
+            g(y_t = 1 \mid z_t) = \exp \big\{-\eta \, c(z_t)\big\},
+          \end{equation}
+          %
+          where $\eta \in \mathbb{R}_{>0}$.
+        \item This yields a joint density
+          \begin{equation}
+            p_\phi(z_{0:T}, y_{0:T} = 1) = p_\phi(z_{0:T}) \exp\left\{-\eta \sum_{t=0}^T c(z_t)\right\}.
+          \end{equation}
+        \item The likelihood can be interpreted as the \emph{probability of being optimal}.
+      \end{itemize}
+    \end{frame}
+
+    \begin{frame}{The Pseudo-Observation}
       \begin{columns}
-        \begin{column}{0.6\textwidth}
+        \begin{column}{0.65\textwidth}
           \begin{itemize}
-            \item Following \citet{toussaint2006probabilistic} and \citet{rawlik2013probabilistic}, let us introduce a binary random variable $y_t$ with likelihood
-              \begin{equation}
-                \smash{g(y_t = 1 \mid x_t, u_t) = \exp \big\{-\eta \, c(x_t, u_t)\big\}},
-              \end{equation}
-              %
-              where $\eta \in \mathbb{R}_{>0}$.
-            \item This can be interpreted as the \emph{probability of being optimal}.
             \item We can treat this as a pseudo-observation in a state-space model.
+              \begin{equation}\label{eq:paper_1_ssm}
+                p_{\phi}(z_{0:T}, y_{0:T}) = \mu_{\phi}(z_0) \prod_{t=0}^{T-1} f_{\phi}(z_{t+1} \mid z_t) \prod_{t=0}^T g(y_t \mid z_t).
+              \end{equation}
+            \item Let us define
+              \begin{equation}
+                \ell(\phi) \coloneq \log p_\phi(y_{0:T} = 1) = \log \mathbb{E}_{p_\phi(z_{0:T})} \bigl[ p(y_{0:T} = 1 \mid z_{0:T}) \bigr]
+              \end{equation}
           \end{itemize}
         \end{column}
-        \begin{column}{0.4\textwidth}
+        \begin{column}{0.35\textwidth}
           \begin{figure}[htbp]
             \label{fig:dgm}
             \centering
@@ -102,39 +136,18 @@
       \end{columns}
     \end{frame}
 
-    \begin{frame}{Maximum Likelihood}
-      Maximizing the marginal likelihood is equivalent to minimizing a risk-sensitive objective
-      \begin{align}\label{eq:max_likelihood}
-        \argmax_{\phi \in \Phi} \medspace \log p(y_{0:T} = 1 \mid \phi) &= \argmin_{\phi \in \Phi} \medspace -\frac{1}{\eta}\log \mathbb{E}_{p_{\phi}} \left[ \exp \big\{-\eta \textstyle \sum_{t=0}^{T} c(x_{t}, u_{t}) \big\} \right] \\
-        &\coloneq \argmin_{\phi \in \Phi} \mathcal{J}_\eta(\phi)
-      \end{align}
-      %
-      where $p_{\phi} \coloneqq p(x_{0:T}, u_{0:T} \mid \phi)$.
-
-      \vskip 0.5cm
-      Taylor expansion around $\eta = 0$ yields
-      \begin{equation}
-        \mathcal{J}_\eta(\phi) = \mathbb{E} \Bigg[ \sum_{t=0}^{T} c_{t}(x_{t}, u_{t}) \Bigg] - \frac{\eta}{2} \, \mathbb{V} \Bigg[ \sum_{t=0}^{T} c_{t}(x_{t}, u_{t}) \Bigg] + \mathcal{O}(\eta^{2}).
-      \end{equation}
-      %
-      Thus, this log-marginal objective amounts to a risk-sensitive variant of the control objective modulated by the temperature $\eta$.
-    \end{frame}
-
-    \begin{frame}{Cleaning up the notation}
+    \begin{frame}{The Marginal Likelihood}
       \begin{itemize}
-        \item Let us define an augmented state
+        \item Maximizing the marginal likelihood is equivalent to minimizing a risk-sensitive objective
+          \begin{align}\label{eq:max_likelihood}
+            \argmax_{\phi \in \Phi} \medspace \ell(\phi) &= \argmin_{\phi \in \Phi} \medspace -\frac{1}{\eta}\log \mathbb{E}_{p_{\phi}(z_{0:T})} \left[ \exp \big\{-\eta \textstyle \sum_{t=0}^{T} c(x_{t}, u_{t}) \big\} \right] \\
+            &\coloneq \argmin_{\phi \in \Phi} \mathcal{J}_\eta(\phi)
+          \end{align}
+        \item Taylor expansion around $\eta = 0$ yields
           \begin{equation}
-            z_t \coloneq (x_t, u_t).
+            \mathcal{J}_\eta(\phi) = \mathbb{E} \Bigg[ \sum_{t=0}^{T} c_{t}(x_{t}, u_{t}) \Bigg] - \frac{\eta}{2} \, \mathbb{V} \Bigg[ \sum_{t=0}^{T} c_{t}(x_{t}, u_{t}) \Bigg] + \mathcal{O}(\eta^{2}).
           \end{equation}
-        \item Additionally, let us define
-          \begin{equation}
-            \mu_{\phi}(z_0) \coloneqq \mu(x_0) \, \pi_{\phi}(u_0 \mid x_0), \quad f_{\phi}(z_{t+1} \mid z_t) \coloneqq f(x_{t+1} \mid x_t, u_t) \, \pi_{\phi}(u_{t+1} \mid x_{t+1}).
-          \end{equation}
-        \item We can then write a joint density
-          \begin{equation}\label{eq:paper_1_ssm}
-            p_{\phi}(z_{0:T}, y_{0:T}) = \mu_{\phi}(z_0) \prod_{t=0}^{T-1} f_{\phi}(z_{t+1} \mid z_t) \prod_{t=0}^T g(y_t \mid z_t).
-          \end{equation}
-        \item Our goal is to find the maximum likelihood estimate for the SSM specified by~\eqref{eq:paper_1_ssm}.
+          Thus, this log-marginal objective amounts to a risk-sensitive variant of the control objective modulated by the temperature $\eta$.
       \end{itemize}
     \end{frame}
 
@@ -155,19 +168,21 @@
     \end{frame}
 
   \section{Markovian Score Climbing for MLE}
-    \begin{frame}{Preliminaries - Particle filters}
+    \begin{frame}{Preliminaries - Particle Filters}
       \begin{columns}
         \begin{column}{0.5\textwidth}
           \begin{itemize}
-            \item A \emph{particle filter} is a sequential Monte Carlo algorithm that can be used to estimate
+            \item<1-> A \emph{particle filter} is a sequential Monte Carlo algorithm that can be used to estimate:
               \begin{itemize}
-                \item the pathwise filtering distributions $p_\phi(x_{0:t} \mid y_{0:t})$,
-                \item and the marginal likelihoods $p_\phi(y_{0:t})$.
+                \item<2-> the pathwise filtering distributions $p_\phi(x_{0:t} \mid y_{0:t})$,
+                \item<3-> the marginal likelihoods $p_\phi(y_t \mid y_{0:t})$.
               \end{itemize}
-            \item A more descriptive name for the particle filter - \emph{sequential importance resampling}.
+            \item<4-> A more descriptive name for the particle filter - \emph{sequential importance resampling}.
+            \item<5-> Given on the right is a \emph{bootstrap} particle filter.
           \end{itemize}
         \end{column}
         \begin{column}{0.5\textwidth}
+          \uncover<5->{
           \begin{algorithm}[H]
             \setstretch{1.35}
             \SetAlgoLined
@@ -186,21 +201,21 @@
                   Set $w_t^n = g(y_t \given z_t^n)$.\;
                 }
               }
-              \label{alg:particle_filter}
-              \caption{Bootstrap particle filter.}
           \end{algorithm}
+          }
         \end{column}
       \end{columns}
     \end{frame}
 
     \begin{frame}{Preliminaries - Particle filters}
-      \begin{itemize}
+      \begin{itemize}[<+->]
         \item Particle filters can provide unbiased estimates of the marginal likelihood for general SSMs, but obtaining its gradient is usually not possible.
         \item In literature this difficulty is often circumvented using Fisher's identity:
           \begin{equation}
-            \nabla_\phi \, \ell(\phi) \coloneq \nabla_\phi \, p_\phi(y_{0:T} = 1) = \int \nabla_\phi \log p_{\phi}(z_{0:T}, y_{0:T}) \, p_\phi(z_{0:T} \given y_{0:T}) \, \dd z_{0:T}.
+            \nabla_\phi \, \ell(\phi) = \int \nabla_\phi \log p_{\phi}(z_{0:T}, y_{0:T}) \, p_\phi(z_{0:T} \given y_{0:T}) \, \dd z_{0:T}.
           \end{equation}
-        \item The above integral can be estimated using samples from the smoothing distribution.
+          $\nabla_\phi \, \ell(\phi)$ is known as the \emph{score function}.
+        \item We can form a Monte Carlo estimate of the above integral using samples from the smoothing distribution, $p_\phi(z_{0:T} \given y_{0:T})$.
       \end{itemize} 
     \end{frame}
 
@@ -240,11 +255,11 @@
       \begin{columns}
         \begin{column}{0.5\textwidth}
           \begin{itemize}
-            \item If we can compute the transition density in closed form, we can do better.
-            \item The result is the \emph{forward filtering backward smoothing} algorithm.
+            \item<1-> If we can compute the transition density in closed form, we can do better using the \emph{backward sampling} routine.
+            \item<2-> The result is the \emph{forward filtering backward smoothing} algorithm.
           \end{itemize}          
         \end{column}
-        \begin{column}{0.5\textwidth}
+        \begin{column}<1->{0.5\textwidth}
           \begin{algorithm*}[H]
             \setstretch{1.35}
             \SetAlgoLined
@@ -256,34 +271,36 @@
               Sample $B_t$ with $\mathbb{P}(B_t = k) \propto w_t^k \, f_\phi(z_{t+1}^{*} \given z_t^k)$ \; 
               Set $z_t^* = z_t^{B_t}$ \; 
             }
-            \caption{Backward sampling.}
           \end{algorithm*}
         \end{column}
       \end{columns}
     \end{frame}
 
-    \begin{frame}{Preliminaries - Gradient ascent using particle smoothing}
-      We now have the building blocks in place to perform MLE through a gradient ascent procedure:
-      \begin{equation}
-          \phi_k = \phi_{k-1} + \gamma_k \, \widehat{\nabla_\phi \ell}(\phi_{k-1}),
-      \end{equation}
-      where
-      \begin{itemize}
-        \item $\widehat{\nabla_\phi \ell}(\phi_{k-1})$ is our stochastic estimate of the score function.
-        \item $\gamma_k$ are step sizes that satisfy $\sum_{k=1}^\infty \gamma_k = \infty, \quad \sum_{k=1}^\infty \gamma_k^2 < \infty$.
-      \end{itemize}
-
-      \vspace{0.5cm}
-      However, one more necessary criterion for the convergence of stochastic gradient ascent~\citep{robbins1951stochastic}, namely
-      \begin{equation}
-        \mathbb{E}\left[\widehat{\nabla_\phi \ell}(\phi_{k-1})\right] = \nabla_\phi \ell(\phi_{k-1})
-      \end{equation}
+    \begin{frame}{Preliminaries - Gradient Ascent Using Particle Smoothing}
+        We now have the building blocks in place to perform maximum likelihood estimation through a gradient ascent procedure:
+        \begin{equation}
+            \phi_k = \phi_{k-1} + \gamma_k \, \widehat{\nabla_\phi \ell}(\phi_{k-1}),
+        \end{equation}
+        where
+        \begin{itemize}
+          \item<2-> $\widehat{\nabla_\phi \ell}(\phi_{k-1})$ is our stochastic estimate of the score function.
+          \item<3-> $\gamma_k$ are step sizes that satisfy $\sum_{k=1}^\infty \gamma_k = \infty, \quad \sum_{k=1}^\infty \gamma_k^2 < \infty$.
+        \end{itemize}
     \end{frame}
 
+    \begin{frame}{Preliminaries - Gradient Ascent Using Particle Smoothing}
+      \begin{itemize}[<+->]
+        \item However, there's one more necessary criterion for the convergence of the stochastic gradient descent (ascent) algorithm~\citep{robbins1951stochastic}, namely
+          \begin{equation}
+            \mathbb{E}\left[\widehat{\nabla_\phi \ell}(\phi_{k-1})\right] = \nabla_\phi \ell(\phi_{k-1})
+          \end{equation}
+        \item Estimates of $\nabla_\phi \, \ell(\phi)$ via particle smoothing are \emph{biased for a finite number of particles $N$}.
+        \item Might work empirically, but no theoretical guarantees.
+      \end{itemize}
+    \end{frame}
 \begin{frame}{Markovian Score Climbing For Likelihood Maximization}
         \begin{itemize}
             \setlength\itemsep{2em}
-            \item Estimates of $\nabla_\phi \, \ell(\phi)$ via particle smoothing are biased for a finite number of particles $N$.
             \item We can do better by drawing samples from a Markov chain Monte Carlo kernel $\mathcal{K}$ ergodic w.r.t. $p_\phi(z_{0:T} \given y_{0:T})$, i.e.,
             \begin{equation*}
                 Z^n \sim \mathcal{K}(\cdot \given \mathcal{K}(\cdot \given \ldots, \phi), \phi) := \mathcal{K}^n(\cdot \given z_{0:T}, \phi).

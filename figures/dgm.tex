@@ -21,44 +21,25 @@
 		\node (y_t) [output]{\large $y_t$}; &   &
 		\node (y_T) [output]{\large $y_T$}; &   &
 		\\ & % X LAYER
-		\node (x_0) [input]{\large $x_0$}; &   &
-		\node (x_t) [input]{\large $x_t$}; &   &
-		\node (x_T) [input]{\large $x_T$}; &   &
-		\\ & % U LAYER
-		\node (u_0) [input]{\large $u_0$}; &   &
-		\node (u_t) [input]{\large $u_t$}; &   &
-		\node (u_T) [input]{\large $u_T$}; &   &
+		\node (z_0) [input]{\large $z_0$}; &   &
+		\node (z_t) [input]{\large $z_t$}; &   &
+		\node (z_T) [input]{\large $z_T$}; &   &
 		\\
         & \node (theta) [input]{\large $\phi$}; & \\
 	};
 	\path[->]
 	% Horizontal connections
-	(x_0) edge[very thick, dashed] (x_t)
-	(x_t) edge[very thick, dashed] (x_T)
+	(z_0) edge[very thick, dashed] (z_t)
+	(z_t) edge[very thick, dashed] (z_T)
 
 	% Connections from x to y
-	(x_0) edge[very thick] (y_0)
-	(x_t) edge[very thick] (y_t)
-	(x_T) edge[very thick] (y_T)
+	(z_0) edge[very thick] (y_0)
+	(z_t) edge[very thick] (y_t)
+	(z_T) edge[very thick] (y_T)
 
-    % Connections from x to u
-	(x_0) edge[very thick] (u_0)
-	(x_t) edge[very thick] (u_t)
-	(x_T) edge[very thick] (u_T)
-
-	% Connections from u to y
-	(u_0) edge[bend right=40, very thick] (y_0)
-	
-	(u_t) edge[bend right=40, very thick] (y_t)
-	(u_T) edge[bend right=40, very thick] (y_T)
-
-	% Diagonal from u to x
-	(u_0) edge[very thick, dashed] (x_t)
-	(u_t) edge[very thick, dashed] (x_T)
-
-    % Connections from pi to u
-	(theta) edge[very thick] (u_0)
-	(theta) edge[bend right=20, very thick] (u_t)
-	(theta) edge[bend right=20, very thick] (u_T)
+  % Connections from pi to u
+	(theta) edge[very thick] (z_0)
+	(theta) edge[bend right=20, very thick] (z_t)
+	(theta) edge[bend right=20, very thick] (z_T)
 	;
 \end{tikzpicture}
