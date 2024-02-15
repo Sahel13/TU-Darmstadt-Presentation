@@ -115,17 +115,17 @@
       \begin{columns}
         \begin{column}{0.65\textwidth}
           \begin{itemize}
-            \item We can treat this as a pseudo-observation in a state-space model.
+            \item<1-> We can treat this as a pseudo-observation in a state-space model.
               \begin{equation}\label{eq:paper_1_ssm}
                 p_{\phi}(z_{0:T}, y_{0:T}) = \mu_{\phi}(z_0) \prod_{t=0}^{T-1} f_{\phi}(z_{t+1} \mid z_t) \prod_{t=0}^T g(y_t \mid z_t).
               \end{equation}
-            \item Let us define
+            \item<2-> Let us define
               \begin{equation}
                 \ell(\phi) \coloneq \log p_\phi(y_{0:T} = 1) = \log \mathbb{E}_{p_\phi(z_{0:T})} \bigl[ p(y_{0:T} = 1 \mid z_{0:T}) \bigr]
               \end{equation}
           \end{itemize}
         \end{column}
-        \begin{column}{0.35\textwidth}
+        \begin{column}<1->{0.35\textwidth}
           \begin{figure}[htbp]
             \label{fig:dgm}
             \centering
@@ -174,8 +174,8 @@
           \begin{itemize}
             \item<1-> A \emph{particle filter} is a sequential Monte Carlo algorithm that can be used to estimate:
               \begin{itemize}
-                \item<2-> the pathwise filtering distributions $p_\phi(x_{0:t} \mid y_{0:t})$,
-                \item<3-> the marginal likelihoods $p_\phi(y_t \mid y_{0:t})$.
+                \item<2-> the pathwise filtering distributions $p_\phi(z_{0:t} \mid y_{0:t})$,
+                \item<3-> the marginal likelihoods $p_\phi(y_t \mid y_{0:t-1})$.
               \end{itemize}
             \item<4-> A more descriptive name for the particle filter - \emph{sequential importance resampling}.
             \item<5-> Given on the right is a \emph{bootstrap} particle filter.
@@ -207,7 +207,7 @@
       \end{columns}
     \end{frame}
 
-    \begin{frame}{Preliminaries - Particle filters}
+    \begin{frame}{Preliminaries - Particle Filters}
       \begin{itemize}[<+->]
         \item Particle filters can provide unbiased estimates of the marginal likelihood for general SSMs, but obtaining its gradient is usually not possible.
         \item In literature this difficulty is often circumvented using Fisher's identity:
@@ -219,7 +219,7 @@
       \end{itemize} 
     \end{frame}
 
-    \begin{frame}{Preliminaries - Genealogy tracking}
+    \begin{frame}{Preliminaries - Genealogy Tracking}
       \begin{columns}
         \begin{column}{0.5\textwidth}
           \begin{itemize}
@@ -251,30 +251,30 @@
       \end{columns}
     \end{frame}
 
-    \begin{frame}{Preliminaries - Backward sampling}
-      \begin{columns}
-        \begin{column}{0.5\textwidth}
-          \begin{itemize}
-            \item<1-> If we can compute the transition density in closed form, we can do better using the \emph{backward sampling} routine.
-            \item<2-> The result is the \emph{forward filtering backward smoothing} algorithm.
-          \end{itemize}          
-        \end{column}
-        \begin{column}<1->{0.5\textwidth}
-          \begin{algorithm*}[H]
-            \setstretch{1.35}
-            \SetAlgoLined
-            \LinesNumbered
-            \DontPrintSemicolon
-            Sample $B_T$ with $\mathbb{P}(B_T = k) \propto w_T^k$ \; 
-            Set $z_T^* = z_T^{B_T}$ \;
-            \For{$t \gets T-1, \dots, 0$}{
-              Sample $B_t$ with $\mathbb{P}(B_t = k) \propto w_t^k \, f_\phi(z_{t+1}^{*} \given z_t^k)$ \; 
-              Set $z_t^* = z_t^{B_t}$ \; 
-            }
-          \end{algorithm*}
-        \end{column}
-      \end{columns}
-    \end{frame}
+    % \begin{frame}{Preliminaries - Backward sampling}
+    %   \begin{columns}
+    %     \begin{column}{0.5\textwidth}
+    %       \begin{itemize}
+    %         \item<1-> If we can compute the transition density in closed form, we can do better using the \emph{backward sampling} routine.
+    %         \item<2-> The result is the \emph{forward filtering backward smoothing} algorithm.
+    %       \end{itemize}          
+    %     \end{column}
+    %     \begin{column}<1->{0.5\textwidth}
+    %       \begin{algorithm*}[H]
+    %         \setstretch{1.35}
+    %         \SetAlgoLined
+    %         \LinesNumbered
+    %         \DontPrintSemicolon
+    %         Sample $B_T$ with $\mathbb{P}(B_T = k) \propto w_T^k$ \; 
+    %         Set $z_T^* = z_T^{B_T}$ \;
+    %         \For{$t \gets T-1, \dots, 0$}{
+    %           Sample $B_t$ with $\mathbb{P}(B_t = k) \propto w_t^k \, f_\phi(z_{t+1}^{*} \given z_t^k)$ \; 
+    %           Set $z_t^* = z_t^{B_t}$ \; 
+    %         }
+    %       \end{algorithm*}
+    %     \end{column}
+    %   \end{columns}
+    % \end{frame}
 
     \begin{frame}{Preliminaries - Gradient Ascent Using Particle Smoothing}
         We now have the building blocks in place to perform maximum likelihood estimation through a gradient ascent procedure:
@@ -283,7 +283,7 @@
         \end{equation}
         where
         \begin{itemize}
-          \item<2-> $\widehat{\nabla_\phi \ell}(\phi_{k-1})$ is our stochastic estimate of the score function.
+          \item<2-> $\widehat{\nabla_\phi \ell}(\phi_{k-1})$ is a stochastic estimate of the score function.
           \item<3-> $\gamma_k$ are step sizes that satisfy $\sum_{k=1}^\infty \gamma_k = \infty, \quad \sum_{k=1}^\infty \gamma_k^2 < \infty$.
         \end{itemize}
     \end{frame}
@@ -294,20 +294,18 @@
           \begin{equation}
             \mathbb{E}\left[\widehat{\nabla_\phi \ell}(\phi_{k-1})\right] = \nabla_\phi \ell(\phi_{k-1})
           \end{equation}
-        \item Estimates of $\nabla_\phi \, \ell(\phi)$ via particle smoothing are \emph{biased for a finite number of particles $N$}.
+        \item Estimates of $\nabla_\phi \, \ell(\phi)$ obtained via particle smoothing are \emph{biased for a finite number of particles $N$}.
         \item Might work empirically, but no theoretical guarantees.
       \end{itemize}
     \end{frame}
-\begin{frame}{Markovian Score Climbing For Likelihood Maximization}
-        \begin{itemize}
-            \setlength\itemsep{2em}
-            \item We can do better by drawing samples from a Markov chain Monte Carlo kernel $\mathcal{K}$ ergodic w.r.t. $p_\phi(z_{0:T} \given y_{0:T})$, i.e.,
-            \begin{equation*}
-                Z^n \sim \mathcal{K}(\cdot \given \mathcal{K}(\cdot \given \ldots, \phi), \phi) := \mathcal{K}^n(\cdot \given z_{0:T}, \phi).
-            \end{equation*}
-            \item The $p_\phi(z_{0:T} \given y_{0:T})$-ergodic MCMC kernel $\mathcal{K}$ guarantees consistent estimates, no matter the number of samples $N$.
+
+    \begin{frame}{Markovian Score Climbing For Likelihood Maximization}
+      \begin{itemize}[<+->]
+        \item Assume we have access to Markov chain Monte Carlo kernel $\mathcal{K}$ that is $p_\phi(z_{0:T} \given y_{0:T})$-ergodic. i.e., samples generated using repeated application of the kernel, $$Z^n \sim \mathcal{K}(\cdot \given \mathcal{K}(\cdot \given \ldots, \theta), \theta) \eqqcolon \mathcal{K}^n(\cdot \given z_{0:T}, \theta)$$ starting from an arbitrary initial trajectory asymptotically produces samples from $p_\theta(z_{0:T} \given y_{0:T})$.
+        \item Then the Markovian score climbing algorithm~\citep{gu1998stochastic, naesseth2020markovian} is guaranteed to converge to a local optima of the marginal likelihood.
         \end{itemize}
     \end{frame}
+
 \begin{frame}{Markovian Score Climbing For Likelihood Maximization}
         \begin{algorithm}[H]
             \setstretch{1.35}
