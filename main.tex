@@ -3,6 +3,7 @@
 % Theming
 \usetheme{Madrid}
 \usecolortheme{beaver}
+\usefonttheme{serif}
 
 \usepackage{amsmath,amssymb,amsthm,mathtools}
 \usepackage{algorithm2e, setspace}
@@ -14,7 +15,6 @@
 \newcommand{\dd}{\mathrm{d}}
 \newtheorem{proposition}[theorem]{Proposition}
 
-\usepackage{times}
 \usepackage{tikz}
 \usepackage{pgfplots}
 \pgfplotsset{compat=newest}
@@ -96,6 +96,7 @@
             \label{fig:dgm}
             \centering
             \include{figures/dgm}
+            \caption{The directed graphical model underlying the control problem.}
           \end{figure}
         \end{column}
       \end{columns}
@@ -485,27 +486,41 @@
       \onslide<5->{\textcolor{red}{The one thing we don't know~(yet)} - a particle smoothing algorithm for $\Gamma_\phi(z_{0:T})$.}
     \end{frame}
 
-  \section{Inside-Out SMC\textsuperscript{2}}
-    \begin{frame}{Preliminaries - IBIS}
+  \section{Inside-Out SMC^2}
+    \begin{frame}{Setting the stage}
+      To come up with a bootstrap particle filter for our non-Markovian time series model, we need to be able to sample from the marginal dynamics,
+      \begin{align}
+        z_t &\sim p_\phi(z_t \mid z_{0:t-1}) \\
+        &= \pi_\phi(\xi_{t-1} \mid z_{0:t-1}) \int f(x_t \mid x_{t-1}, \xi_{t-1}, \theta) \, p(\theta \mid z_{0:t-1}) \, \dd \theta,
+      \end{align}
+      %
+      and compute the reward function,
+      \begin{equation}
+        r_t(z_{0:t}) = - \log \int f(x_t \mid x_{t-1}, \xi_{t-1}, \theta) \, p(\theta \mid z_{0:t-1}) \, \dd \theta,
+      \end{equation}
+      \pause
+      Both of these require estimating the filtered posteriors $p(\theta \mid z_{0:t-1})$.
+    \end{frame}
+
+    \begin{frame}{IBIS}
+      \begin{itemize}[<+->]
+        \item For a model
+          \begin{gather}
+            \theta \sim p(\theta), \\
+            z_t \sim p_\phi(z_t \mid z_{0:t-1}, \theta), \quad t \geq 1,
+          \end{gather}
+          %
+          how can we estimate the running filtered posteriors $p(\theta \mid z_{0:t})$?
+        \item No surprise - using a particle filter!
+        \item We use the \emph{iterated batch importance sampling}~(IBIS) algorithm of~\citet{chopin2002sequential}.
+      \end{itemize}
+    \end{frame}
+
+    \begin{frame}{IBIS}
       \begin{columns}
         \begin{column}{0.5\textwidth}
           \begin{itemize}
-            \only<1,2>{
-            \item For a model
-              \begin{gather}
-                \theta \sim p(\theta), \\
-                z_t \sim p_\phi(z_t \mid z_{0:t-1}, \theta), \quad t \geq 1,
-              \end{gather}
-              %
-              how do we estimate the running filtered posteriors $p(\theta \mid z_{0:t})$?
-            }
-            \only<2-5>{
-            \item We can use the \emph{iterated batch importance sampling}~(IBIS) algorithm from~\citet{chopin2002sequential}.
-            }
-            \only<3>{
             \item We start by sampling $M$ many independent and identically distributed samples $\theta^m \sim p(\theta)$.
-            }
-            \only<4>{
             \item The degeneracy criterion we use is
               \begin{equation}
                 \textrm{ESS} < 0.75 * M,
@@ -514,15 +529,11 @@
               \begin{equation}
                 \textrm{ESS} = \frac{1}{\sum_{m=1}^M (W^m)^2}
               \end{equation}
-            }
-            \only<5>{
             \item $K_t$ is a $p(\theta \mid z_{0:t}$-ergodic MCMC kernel.
             \item We use a random walk Metropolis Hastings kernel.
-            }
           \end{itemize}
         \end{column}
         \begin{column}{0.5\textwidth}
-          \uncover<2->{
           \begin{algorithm}[H]
             \setstretch{1.35}
             \SetAlgoLined
@@ -541,7 +552,7 @@
               \KwRet{$\{\theta^m, W^m\}_{m=1}^M$.} \;
             }
           \end{algorithm}
-          }
+        Hello
         \end{column}
       \end{columns}
     \end{frame}
