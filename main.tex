@@ -127,9 +127,8 @@
         \end{column}
         \begin{column}<1->{0.35\textwidth}
           \begin{figure}[htbp]
-            \label{fig:dgm}
             \centering
-            \include{figures/dgm}
+            \input{figures/dgm}
             \caption{The directed graphical model underlying the control problem.}
           \end{figure}
         \end{column}
@@ -306,8 +305,10 @@
         \end{itemize}
     \end{frame}
 
-\begin{frame}{Markovian Score Climbing For Likelihood Maximization}
-        \begin{algorithm}[H]
+    \begin{frame}{Markovian Score Climbing For Likelihood Maximization}
+      \begin{center}
+        \begin{minipage}{0.75\textwidth}
+          \begin{algorithm}[H]
             \setstretch{1.35}
             \SetAlgoLined
             \LinesNumbered
@@ -320,11 +321,23 @@
                 Update $\phi_k \gets \phi_{k-1} + \gamma_k \widehat{\nabla_\phi \ell}(\phi_{k-1})$\;
             }
             \Return{$\phi_M$}
-        \end{algorithm}
+          \end{algorithm}
+        \end{minipage}
+      \end{center}
     \end{frame}
 
-    \begin{frame}{\textcolor{blue}{Conditional} SMC with backward sampling}
-        \begin{algorithm}[H]
+    \begin{frame}{The MCMC Kernel}
+      \begin{itemize}[<+->]
+        \item The only question that remains - how do we construct the Markov kernel $\mathcal{K}$?
+        \item We shall use the conditional sequential Monte Carlo kernel~\citep[CSMC][]{andrieu2010particle}.
+        \item It is implemented as a simple modification to the particle filter.
+      \end{itemize}
+    \end{frame}
+
+    \begin{frame}{Conditional SMC}
+      \begin{center}
+        \begin{minipage}{0.6\textwidth}
+          \begin{algorithm}[H]
             \setstretch{1.35}
             \SetAlgoLined
             \LinesNumbered
@@ -336,17 +349,29 @@
             Sample $z_0^n \sim \mu_\phi(\cdot)$ and $w_0^n = g(y_0 \given z_0^n)$ \;
             }
             \For{$t \gets 1, \dots, T$}{
-                \textcolor{blue}{Set $z_t^1 = z_t$ and $w_t^1 = g(y_t \given z_t)$} \;
-                \For{$n \gets 2, \dots, N$}{
-                    Sample $A_t^n$ with $\mathbb{P}(A_t^n = k) \propto w_{t-1}^k$ \;
-                    Sample $z_t^n \sim f_\phi(\cdot \given z_{t-1}^{A_t^n})$ and $w_t^n = g(y_t \given z_t^n)$\;
-                }
+              \textcolor{blue}{Set $z_t^1 = z_t$ and $w_t^1 = g(y_t \given z_t)$} \;
+              \For{$n \gets 2, \dots, N$}{
+                  Sample $A_t^n$ with $\mathbb{P}(A_t^n = k) \propto w_{t-1}^k$ \;
+                  Sample $z_t^n \sim f_\phi(\cdot \given z_{t-1}^{A_t^n})$ and $w_t^n = g(y_t \given z_t^n)$\;
+              }
             }
-        \end{algorithm}
+          \end{algorithm}
+        \end{minipage}
+      \end{center}
+    \end{frame}
+
+    \begin{frame}{Conditional SMC}
+      \begin{itemize}
+        \setlength\itemsep{1em}
+        \item The CSMC kernel is a bit wasteful as it generates $T \times N$ particles and only keeps $T$ out of them.
+        \item We can reuse all the generated particles to reduce the variance of the score estimator.
+      \end{itemize}
     \end{frame}
 
     \begin{frame}{Rao-Blackwellized Markovian Score Climbing}
-        \begin{algorithm}[H]
+      \begin{center}
+        \begin{minipage}{0.75\textwidth}
+          \begin{algorithm}[H]
             \setstretch{1.5}
             \SetAlgoLined
             \LinesNumbered
@@ -357,7 +382,9 @@
             Backward-Sample $z^{n}_{0:T} \sim \mathcal{B}$ for all $n = 1, \dots, N$ \;
             Compute $\widehat{\nabla_\phi \ell}(\phi) \gets \frac{1}{N} \sum_{n=1}^N \nabla_\phi \log p_\phi(z^{n}_{0:T}, y_{0:T})$ \;
             \Return{$\widehat{\nabla_\phi \ell}(\phi)$}
-        \end{algorithm}
+          \end{algorithm}
+        \end{minipage}
+      \end{center}
     \end{frame}
 
     \begin{frame}{Numerical Validation}
