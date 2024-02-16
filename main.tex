@@ -29,7 +29,26 @@
 \author{Sahel Iqbal}
 \institute{Aalto University, Finland}
 
+\makeatletter
+\setbeamertemplate{footline}{
+  \leavevmode%
+  \hbox{%
+  \begin{beamercolorbox}[wd=.3\paperwidth,ht=2.25ex,dp=1ex,center]{author in head/foot}%
+    \usebeamerfont{author in head/foot}\insertshortauthor\expandafter\ifblank\expandafter{\beamer@shortinstitute}{}{~~(\insertshortinstitute)}
+  \end{beamercolorbox}%
+  \begin{beamercolorbox}[wd=.45\paperwidth,ht=2.25ex,dp=1ex,center]{title in head/foot}%
+    \usebeamerfont{title in head/foot}\insertshorttitle
+  \end{beamercolorbox}%
+  \begin{beamercolorbox}[wd=.25\paperwidth,ht=2.25ex,dp=1ex,right]{date in head/foot}%
+    \usebeamerfont{date in head/foot}\insertshortdate{}\hspace*{2em}
+    \insertframenumber{} / \inserttotalframenumber\hspace*{2ex} 
+  \end{beamercolorbox}}%
+  \vskip0pt%
+}
+\makeatother
+
 \begin{document}
+  \beamertemplatenavigationsymbolsempty
   \maketitle
 
   \AtBeginSection[] {
@@ -136,7 +155,7 @@
     \end{frame}
 
     \begin{frame}{The Marginal Likelihood}
-      \begin{itemize}
+      \begin{itemize}[<+->]
         \item Maximizing the marginal likelihood is equivalent to minimizing a risk-sensitive objective
           \begin{align}\label{eq:max_likelihood}
             \argmax_{\phi \in \Phi} \medspace \ell(\phi) &= \argmin_{\phi \in \Phi} \medspace -\frac{1}{\eta}\log \mathbb{E}_{p_{\phi}(z_{0:T})} \left[ \exp \big\{-\eta \textstyle \sum_{t=0}^{T} c(x_{t}, u_{t}) \big\} \right] \\
@@ -176,12 +195,11 @@
                 \item<2-> the pathwise filtering distributions $p_\phi(z_{0:t} \mid y_{0:t})$,
                 \item<3-> the marginal likelihoods $p_\phi(y_t \mid y_{0:t-1})$.
               \end{itemize}
-            \item<4-> A more descriptive name for the particle filter - \emph{sequential importance resampling}.
-            \item<5-> Given on the right is a \emph{bootstrap} particle filter.
+            \item<4-> Given on the right is a \emph{bootstrap} particle filter.
           \end{itemize}
         \end{column}
         \begin{column}{0.5\textwidth}
-          \uncover<5->{
+          \uncover<4->{
           \begin{algorithm}[H]
             \setstretch{1.35}
             \SetAlgoLined
@@ -329,8 +347,8 @@
     \begin{frame}{The MCMC Kernel}
       \begin{itemize}[<+->]
         \item The only question that remains - how do we construct the Markov kernel $\mathcal{K}$?
-        \item We shall use the conditional sequential Monte Carlo kernel~\citep[CSMC][]{andrieu2010particle}.
-        \item It is implemented as a simple modification to the particle filter.
+        \item We shall use the conditional sequential Monte Carlo kernel~\citep[CSMC,][]{andrieu2010particle}.
+        \item It is implemented as a simple modification to the particle smoother.
       \end{itemize}
     \end{frame}
 
@@ -427,15 +445,15 @@
       Let
       \begin{itemize}
         \item $\theta \in \Theta$ be a set of unknown parameters of interest with prior $p(\theta)$.
-        \item $\xi \in \Xi$ be a user controllable \emph{design}.
-        \item $p(x \mid \xi, \theta)$ be a likelihood function.
+        \item $u \in u$ be a user controllable \emph{design}.
+        \item $p(x \mid u, \theta)$ be a likelihood function.
       \end{itemize}
       
       \pause
       \begin{definition}
-        The \emph{information gain}~\citep[IG,][]{lindley1956measure}, in the parameter $\theta$, on applying the design $\xi$ and observing the outcome $x$ is defined as
+        The \emph{information gain}~\citep[IG,][]{lindley1956measure}, in the parameter $\theta$, on applying the design $u$ and observing the outcome $x$ is defined as
         \begin{equation}\label{eq:ig_single_experiment}
-          \mathcal{G}(x, \xi) \coloneq \mathbb{H}[p(\theta)] - \mathbb{H}[p(\theta\mid x, \xi)].
+          \mathcal{G}(x, u) \coloneq \mathbb{H}[p(\theta)] - \mathbb{H}[p(\theta\mid x, u)].
         \end{equation}
       \end{definition}
 
@@ -443,17 +461,17 @@
       \begin{definition}
         The \emph{expected information gain}~(EIG) is defined as
         \begin{equation}
-          \mathcal{I}(\xi) \coloneq \mathbb{E}_{p(x \mid \xi)} \, \mathcal{G}(x, \xi).
+          \mathcal{I}(u) \coloneq \mathbb{E}_{p(x \mid u)} \, \mathcal{G}(x, u).
         \end{equation}
       \end{definition}
     \end{frame}
 
     \begin{frame}{Sequential Bayesian Experimental Design}
-      Let us define $z_0 \coloneq \{x_0\}$ and $z_{t} \coloneq \{x_t, \xi_{t-1}\}$ for all $t \geq 1$, and denote the outcome-design history up to time $t$ by $z_{0:t} \coloneq \{x_{0:t}, \xi_{0:t-1}\}$. The system dynamics is specified by
+      Let us define $z_0 \coloneq \{x_0\}$ and $z_{t} \coloneq \{x_t, u_{t-1}\}$ for all $t \geq 1$, and denote the outcome-design history up to time $t$ by $z_{0:t} \coloneq \{x_{0:t}, u_{0:t-1}\}$. The system dynamics is specified by
       \begin{gather}
         x_0 \sim p(x_0), \\
-        \xi_{t-1} \sim \pi_\phi(\xi_{t-1} \mid z_{0:t-1}), \\
-        x_t \sim f(x_t \mid x_{t-1}, \xi_{t-1}, \theta),
+        u_{t-1} \sim \pi_\phi(u_{t-1} \mid z_{0:t-1}), \\
+        x_t \sim f(x_t \mid x_{t-1}, u_{t-1}, \theta),
       \end{gather}
       \pause
 
@@ -461,7 +479,7 @@
       The joint density of states and designs is hence
       \begin{align}\label{eq:joint_density}
         p_{\phi}(z_{0:T} \mid \theta) &= p(z_{0}) \prod_{t=1}^T p_{\phi}(z_{t} \mid z_{0:t-1}, \theta) \\
-        &\coloneq p(x_0) \prod_{t=1}^T f(x_t \mid x_{t-1}, \xi_{t-1}, \theta) \, \pi_\phi(\xi_{t-1} \mid z_{0:t-1})
+        &\coloneq p(x_0) \prod_{t=1}^T f(x_t \mid x_{t-1}, u_{t-1}, \theta) \, \pi_\phi(u_{t-1} \mid z_{0:t-1})
       \end{align}
     \end{frame}
 
@@ -473,7 +491,7 @@
           \end{equation}
         \item Our goal is to find optimal policy parameters $\phi^*$ such that
           \begin{equation}
-            \phi^* \coloneq \argmax_{\phi \in \Phi} \mathcal{I}(\phi)
+            \phi^* \coloneq \argmax_{\phi \in \Phi} \,\, \mathcal{I}(\phi)
           \end{equation}
       \end{itemize}
     \end{frame}
@@ -486,7 +504,7 @@
         \end{equation}
         where
         \begin{gather}
-          r_{t}(z_{0:t}) = - \log \int p(\theta \mid z_{0:t-1}) \, f(x_t \mid x_{t-1}, \xi_{t-1}, \theta) \, \dd \theta, \\
+          r_{t}(z_{0:t}) = - \log \int p(\theta \mid z_{0:t-1}) \, f(x_t \mid x_{t-1}, u_{t-1}, \theta) \, \dd \theta, \\
           p_\phi(z_{0:T}) = \int p_\phi(z_{0:T} \mid \theta) \, p(\theta) \, \dd \theta.
         \end{gather}
       \end{proposition}
@@ -495,21 +513,21 @@
   \section{The dual inference problem}
 
     \begin{frame}{BED as probabilistic inference}
-      Let us introduce a potential function
-      \begin{equation}\label{eq:potential-function}
-        g_{t}(z_{0:t}) \coloneq \exp \Big\{ \eta \, r_{t}(z_{0:t}) \Big\},
-      \end{equation}
-      with $\eta \in \mathbb{R}_{>0}$.
-
-      \vspace{0.3cm}
-      We then define a non-Markovian state-space model characterized by the following joint density
-      \begin{equation}\label{eq:pathwise_smoothing_trajectory}
-        \Gamma_\phi(z_{0:T}) = \frac{1}{Z(\phi)} \, p(z_0) \prod_{t=1}^T p_\phi(z_t \mid z_{0:t-1}) \, g_t(z_{0:t}),
-      \end{equation}
-      where the normalization constant is
-      \begin{equation}
-        Z(\phi) = \int g_{1:T}(z_{0:T}) \, p_\phi(z_{0:T}) \, \dd z_{0:T}.
-      \end{equation}
+      \begin{itemize}[<+->]
+        \item Let us introduce a potential function
+          \begin{equation}\label{eq:potential-function}
+            g_{t}(z_{0:t}) \coloneq \exp \Big\{ \eta \, r_{t}(z_{0:t}) \Big\},
+          \end{equation}
+          with $\eta \in \mathbb{R}_{>0}$.
+        \item We then define a non-Markovian state-space model characterized by the following joint density
+          \begin{equation}\label{eq:pathwise_smoothing_trajectory}
+            \Gamma_\phi(z_{0:T}) = \frac{1}{Z(\phi)} \, p(z_0) \prod_{t=1}^T p_\phi(z_t \mid z_{0:t-1}) \, g_t(z_{0:t}),
+          \end{equation}
+        \item The normalization constant is
+          \begin{equation}
+            Z(\phi) = \int g_{1:T}(z_{0:T}) \, p_\phi(z_{0:T}) \, \dd z_{0:T}.
+          \end{equation}
+      \end{itemize}
     \end{frame}
 
     \begin{frame}{BED as probabilistic inference}
@@ -519,7 +537,7 @@
         \item $\Gamma_\phi(z_{0:T})$ is analogous to the smoothing distribution $p_\phi(z_{0:T} \mid y_{0:T} = 1)$.
         \item Maximizing the (log) marginal likelihood targets the risk-sensitive objective:
           \begin{align}
-            \argmax_{\phi \in \Phi} \log Z(\phi) &= \argmax_{\phi \in \Phi} \frac{1}{\eta} \log \mathbb{E}_{p_\phi(z_{0:T})} \left[\exp \left\{\eta \sum_{t=1}^T r_t(z_{0:t})\right\}\right] \\
+            \argmax_{\phi \in \Phi} \,\, \log Z(\phi) &= \argmax_{\phi \in \Phi} \,\, \frac{1}{\eta} \log \mathbb{E}_{p_\phi(z_{0:T})} \left[\exp \left\{\eta \sum_{t=1}^T r_t(z_{0:t})\right\}\right] \\
             &= \mathbb{E} \left[\sum_{t=1}^T r_t(z_{0:t})\right] - \frac{\eta}{2} \mathbb{V} \left[ \sum_{t=1}^T r_t(z_{0:t}) \right] + \mathcal{O}(\eta^2).
           \end{align}
       \end{itemize}
@@ -528,9 +546,9 @@
     \begin{frame}{BED as probabilistic inference}
       \textcolor{red}{\large What do we know so far?}\vspace{0.1cm}
       \begin{enumerate}
-        \item<2-> We know how to formulate the sequential BED problem as a maximum likelihood estimation problem (in a non-Markovian state-space model).
-        \item<3-> We know how to perform MLE with the Markovian score climbing algorithm, given an MCMC kernel that targets the pathwise smoothing distribution.
-        \item<4-> We know how to convert a particle smoothing algorithm to a CSMC kernel.
+        \item<2-> Sequential BED as a maximum likelihood estimation problem.
+        \item<3-> MLE with the Markovian score climbing algorithm.
+        \item<4-> CSMC kernel from a particle smoother.
       \end{enumerate}
 
       \vspace{0.3cm}
@@ -539,21 +557,21 @@
 
   \section{Inside-Out \texorpdfstring{SMC\textsuperscript{2}}{SMC2}}
     \begin{frame}{Setting the stage}
-      To come up with a bootstrap particle filter for our non-Markovian time series model, we need to be able to sample from the marginal dynamics,
-      \begin{align}
-        z_t &\sim p_\phi(z_t \mid z_{0:t-1}) \\
-        &= \pi_\phi(\xi_{t-1} \mid z_{0:t-1}) \int f(x_t \mid x_{t-1}, \xi_{t-1}, \theta) \, p(\theta \mid z_{0:t-1}) \, \dd \theta,
-      \end{align}
-      %
-      and compute the reward function,
-      \begin{equation}
-        r_t(z_{0:t}) = - \log \int f(x_t \mid x_{t-1}, \xi_{t-1}, \theta) \, p(\theta \mid z_{0:t-1}) \, \dd \theta.
-      \end{equation}
-      \pause
-      Both of these require estimating the filtered posteriors $p(\theta \mid z_{0:t-1})$.
+      Two components necessary for a bootstrap particle filter:
+      \begin{itemize}[<+->]
+        \item Sample from the dynamics
+          \begin{align}
+            z_t &\sim p_\phi(z_t \mid z_{0:t-1}) \\
+            &= \pi_\phi(u_{t-1} \mid z_{0:t-1}) \int f(x_t \mid x_{t-1}, u_{t-1}, \theta) \, p(\theta \mid z_{0:t-1}) \, \dd \theta.
+          \end{align}
+        \item Compute the reward function
+          \begin{equation}
+            r_t(z_{0:t}) = - \log \int f(x_t \mid x_{t-1}, u_{t-1}, \theta) \, p(\theta \mid z_{0:t-1}) \, \dd \theta.
+          \end{equation}
+      \end{itemize}
     \end{frame}
 
-    \begin{frame}{IBIS}
+    \begin{frame}{Iterated Batch Importance Sampling}
       \begin{itemize}[<+->]
         \item For a model
           \begin{gather}
@@ -566,6 +584,128 @@
         \item We use the \emph{iterated batch importance sampling}~(IBIS) algorithm of~\citet{chopin2002sequential}.
       \end{itemize}
     \end{frame}
+
+    \begin{frame}{Iterated Batch Importance Sampling}
+      \begin{columns}
+        \begin{column}{0.5\textwidth}
+          \begin{itemize}
+            \only<1-2>{
+            \item We start by sampling $M$ many independent and identically distributed samples $\theta^m \sim p(\theta)$ with uniform weights $W^m = 1/M$.
+            }
+            \only<2>{
+            \item We then follow the routine outlined in the function \textsc{IbisStep}.
+            }
+            \only<3>{
+            \item The weight update is in accordance with Bayes' rule
+              \begin{equation}
+                p(\theta \mid z_{0:t}) \propto p_\phi(z_t \mid z_{0:t-1}, \theta) \, p(\theta \mid z_{0:t-1})
+              \end{equation}
+            }
+          \end{itemize}
+        \end{column}
+        \begin{column}{0.5\textwidth}
+          \uncover<2->{
+          \begin{algorithm}[H]
+            \setstretch{1.35}
+            \SetAlgoLined
+            \LinesNumbered
+            \DontPrintSemicolon
+            \SetKwProg{Fn}{Function}{}{}
+            \Fn{\textsc{IbisStep}$(z_{0:t}, \theta^{1:M}, W^{1:M})$}{
+              Compute $v_t(\theta^m) = p_\phi(z_t \mid z_{0:t-1}, \theta^m)$. \;
+              Reweight: $W^m \propto W^m v_t(\theta^m)$. \;
+              \If{some degeneracy criterion is fulfilled}{
+                Perform resample-move. \;
+              }
+              \KwRet{$\{\theta^m, W^m\}_{m=1}^M$.} \;
+            }
+          \end{algorithm}
+        }
+        \end{column}
+      \end{columns}
+    \end{frame}
+
+    \begin{frame}{Inside-Out \texorpdfstring{SMC\textsuperscript{2}}{SMC2}}
+      \begin{itemize}
+        \item Assume that at time $t$ we have a trajectory $z_{0:t}^n$, where $n = 1, \dots, N$.
+        \item Assume that we also have a particle approximation of the filtering posterior of $\theta$ obtained using IBIS:
+          \begin{equation}
+            p(\theta \mid z_{0:t}^n) \approx \hat{p}(\theta \mid z_{0:t}^n) \coloneq \sum_{m=1}^M W_{t,\theta}^{mn} \, \delta_{\theta_t^{mn}}(\theta).
+          \end{equation}
+          where $\delta$ is the Dirac delta function.
+        \item We can then form an approximation to the marginal dynamics for the state as
+          \begin{align}
+            \hat{p}(x_{t+1} \mid z_{0:t}^n, u_t) &= \int f(x_{t+1} \mid x_t^n, u_t, \theta) \, \hat{p}(\theta \mid z_{0:t}^n) \, \dd\theta \\
+            &= \sum_{m=1}^M W_{t,\theta}^{mn} \, f(x_{t+1} \mid x_t^n, u_t, \theta_t^{mn}).
+      \end{align}
+      \end{itemize}
+    \end{frame}
+
+    \begin{frame}{Inside-Out \texorpdfstring{SMC\textsuperscript{2}}{SMC2}}
+      \begin{center}
+        \begin{minipage}{0.8\textwidth}
+          \begin{algorithm}[H]
+            \setstretch{1.35}
+            \LinesNumbered
+            \SetAlgoLined
+            \DontPrintSemicolon
+            Sample $z_0^n \sim p(z_0)$, $\theta_0^{mn} \sim p(\theta)$ and set $W_{0, \theta}^{mn} \gets 1/M$. \;
+            Sample $z_1^n \sim \hat{p}_\phi(\cdot \mid z_0^n)$ and initialize the state history $z_{0:1}^n \gets (z_0^n, z_1^n)$. \;
+            Compute and normalize the weights
+                \vspace{-0.2cm} $$\smash{W_z^n \propto \exp \Big \{-\eta \log \hat{p}(x_1^n \mid x_0^n, u_0^n) \Big\}.}$$ \vspace{-0.6cm}\;
+            \For{$t \gets 1, \dots, T - 1$}{
+              Sample $b_t^n \sim \mathcal{M}(W_z^{1:N})$. \;
+              $\theta_t^{\bullet n}, W^{\bullet n}_{t, \theta}, \gets \textsc{Ibis\_Step}(z_{0:t}^{b_t^n}, \theta_{t-1}^{\bullet b_t^n}, W^{\bullet b_t^n}_{t - 1, \theta})$ \;
+              Sample $z_{t+1}^n \sim \hat{p}_\phi(\cdot \mid z_{0:t}^{b_t^n}),$
+                  and append to state history $z_{0:t+1}^n \gets [z_{0:t}^{b_t^n}, z_{t+1}^n]$. \;
+              Compute and normalize the weights
+                  \vspace{-0.2cm} $$\smash{W_z^n \propto \exp\left\{-\eta \log \hat{p}(x_{t+1}^n \mid z_{0:t}^{b_t^n}, u_t^n)\right\}.}$$ \vspace{-0.6cm} \;
+            }
+            \KwRet{$\{z_{0:T}^n, W_z^n\}_{n=1}^N$.}
+            \label{alg:iosmc}
+          \end{algorithm}
+        \end{minipage}
+      \end{center}
+    \end{frame}
+
+    \begin{frame}{Inside-Out \texorpdfstring{SMC\textsuperscript{2}}{SMC2}}
+      \begin{itemize}
+        \item The algorithm asymptotically targets the distribution $\Gamma_\phi(z_{0:T})$~(Proposition 2).
+        \item A conditional version of the algorithm can be developed in the same way as for state-space models~(Appendix C.4).
+      \end{itemize}
+    \end{frame}
+
+    \begin{frame}{Preliminary Empirical Results}
+      \begin{figure}[t]
+        \input{figures/pendulum_info_gain}
+        \vspace{-0.25cm}
+        \caption{Information gain of different policies computed in closed-form on the conditionally-linear stochastic pendulum. We report the mean and standard deviation over 512 realizations.}
+        \label{fig:pendulum_info_gain}
+      \end{figure}
+    \end{frame}
+
+    \begin{frame}{Preliminary Empirical Results}
+      \begin{figure}[!h]
+        \centering
+        \input{figures/pendulum_sample_trajectory}
+        \vspace{-0.25cm}
+        \caption{A sample experiment trajectory generated by the amortized policy during deployment on the non-linear stochastic pendulum environment. $q$ is the angle of the pendulum from the vertical, $\dot{q}$ is the angular velocity and $u$ is the design.}
+      \end{figure}
+    \end{frame}
+
+    \begin{frame}{Preliminary Empirical Results}
+      \begin{figure}[t]
+        \input{figures/pendulum_eig}
+        \caption{Training progression of the IO-SMC\textsuperscript{2} policy and its exact variant on the conditionally-linear stochastic pendulum. At every epoch, we evaluate the EIG estimate using the mean policy. We report the mean and standard deviation over 25 training runs.}
+      \end{figure}
+    \end{frame}
+
+  % Bibliography
+  \begin{frame}[t, allowframebreaks]{References}
+    \bibliography{references}
+  \end{frame}
+
+  \appendix
 
     \begin{frame}{IBIS}
       \begin{columns}
@@ -623,88 +763,5 @@
         \end{column}
       \end{columns}
     \end{frame}
-
-    \begin{frame}{Inside-Out \texorpdfstring{SMC\textsuperscript{2}}{SMC2}}
-      \begin{itemize}
-        \item Assume that at time $t$ we have a trajectory $z_{0:t}^n$, where $n = 1, \dots, N$.
-        \item Assume that we also have a particle approximation of the filtering posterior of $\theta$ obtained using IBIS:
-          \begin{equation}
-            p(\theta \mid z_{0:t}^n) \approx \hat{p}(\theta \mid z_{0:t}^n) \coloneq \sum_{m=1}^M W_{t,\theta}^{mn} \, \delta_{\theta_t^{mn}}(\theta).
-          \end{equation}
-          where $\delta$ is the Dirac delta function.
-        \item We can then form an approximation to the marginal dynamics for the state as
-          \begin{align}
-            \hat{p}(x_{t+1} \mid z_{0:t}^n, \xi_t) &= \int f(x_{t+1} \mid x_t^n, \xi_t, \theta) \, \hat{p}(\theta \mid z_{0:t}^n) \, \dd\theta \\
-            &= \sum_{m=1}^M W_{t,\theta}^{mn} \, f(x_{t+1} \mid x_t^n, \xi_t, \theta_t^{mn}).
-      \end{align}
-      \end{itemize}
-    \end{frame}
-
-    \begin{frame}{Inside-Out \texorpdfstring{SMC\textsuperscript{2}}{SMC2}}
-      \begin{algorithm}[H]
-        \setstretch{1.35}
-        \SetAlgoLined
-        \DontPrintSemicolon
-        \LinesNumbered
-        Sample $z_0^n \sim p(z_0)$, $\theta_0^{mn} \sim p(\theta)$ and set $W_{0, \theta}^{mn} \gets 1/M$. \;
-        Sample $z_1^n \sim \hat{p}_\phi(\cdot \mid z_0^n)$ and initialize the state history $z_{0:1}^n \gets (z_0^n, z_1^n)$. \;
-        Compute and normalize the weights
-            \vspace{-0.2cm} $$\smash{W_z^n \propto \exp \Big \{-\eta \log \hat{p}(x_1^n \mid x_0^n, \xi_0^n) \Big\}.}$$ \vspace{-0.6cm}\;
-        \For{$t \gets 1, \dots, T - 1$}{
-          Sample $b_t^n \sim \mathcal{M}(W_z^{1:N})$. \;
-          $\theta_t^{\bullet n}, W^{\bullet n}_{t, \theta}, \gets \textsc{Ibis\_Step}(z_{0:t}^{b_t^n}, \theta_{t-1}^{\bullet b_t^n}, W^{\bullet b_t^n}_{t - 1, \theta})$ \;
-          Sample $z_{t+1}^n \sim \hat{p}_\phi(\cdot \mid z_{0:t}^{b_t^n}),$
-              and append to state history $z_{0:t+1}^n \gets [z_{0:t}^{b_t^n}, z_{t+1}^n]$. \;
-          Compute and normalize the weights
-              \vspace{-0.2cm} $$\smash{W_z^n \propto \exp\left\{-\eta \log \hat{p}(x_{t+1}^n \mid z_{0:t}^{b_t^n}, \xi_t^n)\right\}.}$$ \vspace{-0.6cm} \;
-        }
-        \KwRet{$\{z_{0:T}^n, W_z^n\}_{n=1}^N$.}
-        \label{alg:iosmc}
-      \end{algorithm}
-    \end{frame}
-
-    \begin{frame}{Inside-Out \texorpdfstring{SMC\textsuperscript{2}}{SMC2}}
-      \begin{itemize}
-        \item The algorithm asymptotically targets the distribution $\Gamma_\phi(z_{0:T})$~(Proposition 2).
-        \item A conditional version of the algorithm can be developed in the same way as for state-space models~(Appendix C.4).
-      \end{itemize}
-    \end{frame}
-
-    \begin{frame}{Preliminary Empirical Results}
-      \begin{itemize}
-        \item We consider the conditionally linear formulation of the compound pendulum as given in~\citet{belusov2019belief}.
-        \item The unknown parameters are $\theta = \displaystyle \left(\frac{3g}{2l}, \frac{3d}{ml^2}, \frac{3}{ml^2} \right)$.
-        \item The dynamics is described by the following Ito SDE
-          \begin{equation}
-            dx_t = h(x_t, \xi_t)^T \, \theta \, \dd t + L \, \dd \beta,
-          \end{equation}
-          %
-          where $h(x_t, \xi_t) = (-\sin(q), -\dot{q}, \xi_t)^T$, $L = (0, 0.1)^T$ and $\beta$ denotes Brownian motion.
-      \end{itemize}
-    \end{frame}
-
-    \begin{frame}{Preliminary Empirical Results}
-      \begin{figure}[t]
-        \input{figures/pendulum_info_gain}
-        \vspace{-0.25cm}
-        \caption{Information gain of different policies computed in closed-form on the conditionally-linear stochastic pendulum. We report the mean and standard deviation over 512 realizations.}
-        \label{fig:pendulum_info_gain}
-      \end{figure}
-    \end{frame}
-
-    \begin{frame}{Preliminary Empirical Results}
-      \begin{figure}[!h]
-        \centering
-        \input{figures/pendulum_sample_trajectory}
-        \vspace{-0.25cm}
-        \caption{A sample experiment trajectory generated by the amortized policy during deployment on the non-linear stochastic pendulum environment. $q$ is the angle of the pendulum from the vertical, $\dot{q}$ is the angular velocity and $\xi$ is the design.}
-        \label{fig:pendulum_sample_trajectory}
-      \end{figure}
-    \end{frame}
-
-  % Bibliography
-  \begin{frame}[t, allowframebreaks]{References}
-    \bibliography{references}
-  \end{frame}
 
 \end{document}
