@@ -103,6 +103,7 @@
 
     \begin{frame}{Some Notation}
       \begin{itemize}[<+->]
+        \setlength\itemsep{1.5em}
         \item Let us define an augmented state
           \begin{equation}
             z_t \coloneq (x_t, u_t).
@@ -113,13 +114,14 @@
           \end{equation}
         \item The distribution of an augmented state trajectory is then
           \begin{equation}
-            p_\phi(z_{0:T}) = \mu_\phi(x_0) \prod_{t=1}^T f_{\phi}(z_{t+1} \mid z_t).
+            p_\phi(z_{0:T}) = \mu_\phi(z_0) \prod_{t=1}^T f_{\phi}(z_{t+1} \mid z_t).
           \end{equation}
       \end{itemize}
     \end{frame}
 
     \begin{frame}{The Pseudo-Observation}
       \begin{itemize}[<+->]
+        \setlength\itemsep{1.5em}
         \item Following \citet{toussaint2006probabilistic} and \citet{rawlik2013probabilistic}, let us introduce a binary random variable $y_t$ with likelihood
           \begin{equation}
             g(y_t = 1 \mid z_t) = \exp \big\{-\eta \, c(z_t)\big\},
@@ -178,14 +180,15 @@
         p_{\phi}(z_{0:T}, y_{0:T}) = \mu_{\phi}(z_0) \prod_{t=0}^{T-1} f_{\phi}(z_{t+1} \mid z_t) \prod_{t=0}^T g(y_t \mid z_t).
       \end{equation}
       \begin{itemize}
-        \item In general, the SSM can be
+        \setlength\itemsep{1em}
+        \item<1-> In general, the SSM can be
         \begin{itemize}
           \item non-linear,
           \item non-Gaussian,
           \item bounded support.
         \end{itemize}
-      \item Gaussian approximations yield biased estimates of the marginal likelihood.
-      \item The solution - particle methods!
+      \item<2-> Gaussian approximations yield biased estimates of the marginal likelihood.
+      \item<3-> The solution - particle methods!
       \end{itemize}
     \end{frame}
 
@@ -230,7 +233,8 @@
 
     \begin{frame}{Preliminaries - Particle Filters}
       \begin{itemize}[<+->]
-        \item Particle filters can provide unbiased estimates of the marginal likelihood for general SSMs, but obtaining its gradient is usually not possible.
+        \setlength\itemsep{1.5em}
+        \item Particle filters can provide unbiased estimates of $\ell(\phi)$, but obtaining its gradient is usually not possible.
         \item In literature this difficulty is often circumvented using Fisher's identity:
           \begin{equation}
             \nabla_\phi \, \ell(\phi) = \int \nabla_\phi \log p_{\phi}(z_{0:T}, y_{0:T}) \, p_\phi(z_{0:T} \given y_{0:T}) \, \dd z_{0:T}.
@@ -247,13 +251,14 @@
         \end{equation}
         where
         \begin{itemize}
-          \item<2-> $\widehat{\nabla_\phi \ell}(\phi_{k-1})$ is a stochastic estimate of the score function.
-          \item<3-> $\gamma_k$ are step sizes that satisfy $\sum_{k=1}^\infty \gamma_k = \infty, \quad \sum_{k=1}^\infty \gamma_k^2 < \infty$.
+          \item $\widehat{\nabla_\phi \ell}(\phi_{k-1})$ is a stochastic estimate of the score function.
+          \item $\gamma_k$ are step sizes that satisfy $\sum_{k=1}^\infty \gamma_k = \infty, \quad \sum_{k=1}^\infty \gamma_k^2 < \infty$.
         \end{itemize}
     \end{frame}
 
     \begin{frame}{Preliminaries - Gradient Ascent Using Particle Smoothing}
       \begin{itemize}[<+->]
+        \setlength\itemsep{1.5em}
         \item However, there's one more necessary criterion for the convergence of the stochastic gradient descent (ascent) algorithm~\citep{robbins1951stochastic}, namely
           \begin{equation}
             \mathbb{E}\left[\widehat{\nabla_\phi \ell}(\phi_{k-1})\right] = \nabla_\phi \ell(\phi_{k-1})
@@ -265,8 +270,9 @@
 
     \begin{frame}{Markovian Score Climbing For Likelihood Maximization}
       \begin{itemize}[<+->]
-        \item Assume we have access to Markov chain Monte Carlo kernel $\mathcal{K}$ that is $p_\phi(z_{0:T} \given y_{0:T})$-ergodic. i.e., samples generated using repeated application of the kernel, $$Z^n \sim \mathcal{K}(\cdot \given \mathcal{K}(\cdot \given \ldots, \theta), \theta) \eqqcolon \mathcal{K}^n(\cdot \given z_{0:T}, \theta)$$ starting from an arbitrary initial trajectory asymptotically produces samples from $p_\theta(z_{0:T} \given y_{0:T})$.
-        \item Then the Markovian score climbing algorithm~\citep{gu1998stochastic, naesseth2020markovian} is guaranteed to converge to a local optima of the marginal likelihood.
+        \setlength\itemsep{1.5em}
+        \item The Markovian score climbing algorithm~\citep{gu1998stochastic, naesseth2020markovian} is guaranteed to converge to a local optima of the marginal likelihood.
+        \item It needs a Markov chain Monte Carlo kernel $\mathcal{K}$ that is $p_\phi(z_{0:T} \given y_{0:T})$-ergodic. i.e., samples generated using repeated application of the kernel, $$Z^n \sim \mathcal{K}(\cdot \given \mathcal{K}(\cdot \given \ldots, \theta), \theta) \eqqcolon \mathcal{K}^n(\cdot \given z_{0:T}, \theta)$$ starting from an arbitrary initial trajectory asymptotically produces samples from $p_\theta(z_{0:T} \given y_{0:T})$.
         \end{itemize}
     \end{frame}
 
@@ -294,6 +300,7 @@
 
     \begin{frame}{The MCMC Kernel}
       \begin{itemize}[<+->]
+        \setlength\itemsep{1.5em}
         \item The only question that remains - how do we construct the Markov kernel $\mathcal{K}$?
         \item We shall use the conditional sequential Monte Carlo kernel~\citep[CSMC,][]{andrieu2010particle}.
         \item It is implemented as a simple modification to the particle smoother.
@@ -384,7 +391,7 @@
           \begin{figure}[htbp]
             \centering
             \includegraphics[scale=0.1]{figures/psoc_qr.png}
-            \caption{\url{github.com/hanyas/psoc.git}}
+            \caption{Code available at \url{https://github.com/hanyas/psoc}}
           \end{figure}
         \end{column}
       \end{columns}
@@ -402,8 +409,8 @@
       \textbf{Limitations}:\vspace{1em}
       \begin{itemize}
         \setlength\itemsep{1em}
-        \item Principled way to choose the temperature.
-        \item Full access to the transition density.
+        \item No principled way to choose the temperature.
+        \item Requires full access to the transition density.
       \end{itemize}
     \end{frame}
 
@@ -412,13 +419,12 @@
       Let
       \begin{itemize}
         \item $\theta \in \Theta$ be a set of unknown parameters of interest with prior $p(\theta)$.
-        \item $u \in u$ be a user controllable \emph{design}.
         \item $p(x \mid u, \theta)$ be a likelihood function.
       \end{itemize}
       
       \pause
       \begin{definition}
-        The \emph{information gain}~\citep[IG,][]{lindley1956measure}, in the parameter $\theta$, on applying the design $u$ and observing the outcome $x$ is defined as
+        The \emph{information gain}~\citep[IG,][]{lindley1956measure}, in the parameter $\theta$, on applying the action $u$ and observing the outcome $x$ is defined as
         \begin{equation}\label{eq:ig_single_experiment}
           \mathcal{G}(x, u) \coloneq \mathbb{H}[p(\theta)] - \mathbb{H}[p(\theta\mid x, u)].
         \end{equation}
@@ -434,7 +440,7 @@
     \end{frame}
 
     \begin{frame}{Sequential Bayesian Experimental Design}
-      Let us define $z_0 \coloneq \{x_0\}$ and $z_{t} \coloneq \{x_t, u_{t-1}\}$ for all $t \geq 1$, and denote the outcome-design history up to time $t$ by $z_{0:t} \coloneq \{x_{0:t}, u_{0:t-1}\}$. The system dynamics is specified by
+      Let us define $z_0 \coloneq \{x_0\}$ and $z_{t} \coloneq \{x_t, u_{t-1}\}$ for all $t \geq 1$, and denote the state-action history up to time $t$ by $z_{0:t} \coloneq \{x_{0:t}, u_{0:t-1}\}$. The system dynamics is specified by
       \begin{gather}
         x_0 \sim p(x_0), \\
         u_{t-1} \sim \pi_\phi(u_{t-1} \mid z_{0:t-1}), \\
@@ -479,7 +485,7 @@
 
   \section{The dual inference problem}
 
-    \begin{frame}{BED as probabilistic inference}
+    \begin{frame}{BED as Probabilistic Inference}
       \begin{itemize}[<+->]
         \item Let us introduce a potential function
           \begin{equation}\label{eq:potential-function}
@@ -497,7 +503,7 @@
       \end{itemize}
     \end{frame}
 
-    \begin{frame}{BED as probabilistic inference}
+    \begin{frame}{BED as Probabilistic Inference}
       Some observations:\vspace{0.1cm}
       \begin{itemize}
         \setlength\itemsep{1em}
@@ -511,7 +517,7 @@
       \end{itemize}
     \end{frame}
 
-    \begin{frame}{BED as probabilistic inference}
+    \begin{frame}{BED as Probabilistic Inference}
       \textcolor{red}{\large What do we know so far?}\vspace{0.2cm}
       \begin{enumerate}
         \setlength\itemsep{1.5em}
@@ -677,6 +683,12 @@
       \end{figure}
     \end{frame}
 
+    \begin{frame}{Preliminary Empirical Results}
+      \begin{itemize}
+        \item Code is available at \url{https://github.com/Sahel13/InsideOutSMC2.jl}.
+      \end{itemize}
+    \end{frame}
+
     \begin{frame}{Summary}
       \textbf{Strengths}:\vspace{1em}
       \begin{itemize}
@@ -690,8 +702,8 @@
       \begin{itemize}
         \setlength\itemsep{1em}
         \item Empirical validation is insufficient (currently ongoing).
-        \item Principled way to choose the temperature.
-        \item Full access to the transition density.
+        \item No principled way to choose the temperature.
+        \item Requires full access to the transition density.
       \end{itemize}
     \end{frame}
 
